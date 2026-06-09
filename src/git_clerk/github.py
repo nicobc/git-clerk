@@ -45,14 +45,12 @@ def repo() -> str:
 
 
 def pr_create(title: str, body: str, base: str = "main") -> tuple[int, str]:
-    args = [
-        "pr", "create", "--base", base, "--title", title, "--repo", repo(), "--json", "number,url"
-    ]
+    args = ["pr", "create", "--base", base, "--title", title, "--repo", repo()]
     if body:
         args += ["--body", body]
-    out = _gh(*args, capture=True)
-    data = json.loads(out)
-    return int(data["number"]), str(data["url"])
+    url = _gh(*args, capture=True)
+    number = int(url.rstrip("/").split("/")[-1])
+    return number, url
 
 
 def pr_view() -> tuple[int, str]:

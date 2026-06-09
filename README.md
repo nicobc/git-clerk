@@ -23,7 +23,7 @@ If your workflow diverges from any of these, git-clerk is not the right tool.
 
 - Python 3.10+
 - [uv](https://docs.astral.sh/uv/) for installation
-- [GitHub CLI](https://cli.github.com/) (`gh`) authenticated to your GitHub account
+- [GitHub CLI](https://cli.github.com/) (`gh`) 2.0 or later, authenticated to your GitHub account
 
 **Repository configuration**
 
