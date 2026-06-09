@@ -144,7 +144,7 @@ git clerk commit "add login form"
 
 **Body**
 
-By default there is no body — most commits don't need one. There are three ways to add one:
+By default there is no body — most commits don't need one. There are two ways to add one:
 
 ```sh
 # Inline — pass the body as a second positional argument.
@@ -152,7 +152,7 @@ By default there is no body — most commits don't need one. There are three way
 git clerk commit "add login form" "Supports email and SSO providers."
 
 # Interactive — open $EDITOR. Save and exit to use the body; quit without
-# saving to commit with no body.
+# saving to abort.
 git clerk commit -e "add login form"
 ```
 
@@ -190,7 +190,7 @@ By default no body is added. There are two ways to add one:
 git clerk pr "Add login form" "Adds email/password and SSO login. Closes #42."
 
 # Interactive — open $EDITOR. Save and exit to use the body;
-# quit without saving to create the PR with no body.
+# quit without saving to abort.
 git clerk pr -e "Add login form"
 ```
 
