@@ -77,7 +77,13 @@ def pr_merge(pr_number: int) -> None:
 def pr_checks_watch(pr_number: int) -> None:
     for _ in range(18):  # up to 90s
         out = _gh(
-            "pr", "view", str(pr_number), "--repo", repo(), "--json", "statusCheckRollup",
+            "pr",
+            "view",
+            str(pr_number),
+            "--repo",
+            repo(),
+            "--json",
+            "statusCheckRollup",
             capture=True,
         )
         if json.loads(out).get("statusCheckRollup"):
