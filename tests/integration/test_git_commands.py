@@ -38,7 +38,7 @@ def _tag_list(cwd: Path) -> list[str]:
 class TestBranch:
     def test_creates_branch_from_origin_main(self, git_repo: Path, runner: CliRunner) -> None:
         result = runner.invoke(main, ["branch", "feat/my-scope"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         assert _current_branch(git_repo) == "feat/my-scope"
 
     def test_invalid_type_exits_nonzero(self, git_repo: Path, runner: CliRunner) -> None:
@@ -65,14 +65,14 @@ class TestCommit:
         (git_repo / "file.txt").write_text("hello")
         subprocess.run(["git", "add", "file.txt"], cwd=git_repo, check=True)
         result = runner.invoke(main, ["commit", "add test file"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         assert _commit_subject(git_repo) == "feat(my-scope): add test file"
 
     def test_stage_all_flag(self, git_repo: Path, runner: CliRunner) -> None:
         (git_repo / "file.txt").write_text("hello")
         # deliberately skip `git add` — the -A flag must stage the file itself
         result = runner.invoke(main, ["commit", "-A", "add test file"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         committed = (
             subprocess.run(
                 ["git", "diff-tree", "--no-commit-id", "-r", "--name-only", "HEAD"],
@@ -89,32 +89,32 @@ class TestCommit:
         (git_repo / "file.txt").write_text("hello")
         subprocess.run(["git", "add", "file.txt"], cwd=git_repo, check=True)
         result = runner.invoke(main, ["commit", "-t", "fix", "fix bug"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         assert _commit_subject(git_repo) == "fix(my-scope): fix bug"
 
     def test_scope_override(self, git_repo: Path, runner: CliRunner) -> None:
         (git_repo / "file.txt").write_text("hello")
         subprocess.run(["git", "add", "file.txt"], cwd=git_repo, check=True)
         result = runner.invoke(main, ["commit", "-s", "other", "cross-cutting change"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         assert _commit_subject(git_repo) == "feat(other): cross-cutting change"
 
 
 class TestRelease:
     def test_calver_creates_tag(self, git_repo: Path, runner: CliRunner) -> None:
         result = runner.invoke(main, ["release", "--calver", "-y"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         assert len(_tag_list(git_repo)) == 1
 
     def test_semver_creates_initial_tag(self, git_repo: Path, runner: CliRunner) -> None:
         result = runner.invoke(main, ["release", "--semver", "--bump", "patch", "-y"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         assert "v0.1.0" in _tag_list(git_repo)
 
     def test_semver_increments_existing_tag(self, git_repo: Path, runner: CliRunner) -> None:
         runner.invoke(main, ["release", "--semver", "--bump", "patch", "-y"])
         result = runner.invoke(main, ["release", "--semver", "--bump", "minor", "-y"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         assert "v0.2.0" in _tag_list(git_repo)
 
     def test_tag_is_pushed_to_remote(

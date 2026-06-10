@@ -48,7 +48,7 @@ class TestPr:
         )
         fp.register(["gh", "pr", "checks", "1", "--repo", FAKE_REPO, "--watch"])  # pyright: ignore[reportUnknownMemberType]
         result = runner.invoke(main, ["pr", "add tests"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         assert PR_URL in result.output
 
 
@@ -76,7 +76,7 @@ class TestShip:
             ["gh", "pr", "merge", "1", "--squash", "--delete-branch", "--repo", FAKE_REPO],
         )
         result = runner.invoke(main, ["ship", "-y"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         branch = subprocess.run(
             ["git", "branch", "--show-current"],
             capture_output=True,
