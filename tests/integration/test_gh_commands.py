@@ -31,6 +31,8 @@ class TestPr:
                 "main",
                 "--title",
                 "feat(my-scope): add tests",
+                "--body",
+                "",
                 "--repo",
                 FAKE_REPO,
             ],

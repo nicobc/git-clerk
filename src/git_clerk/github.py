@@ -46,9 +46,7 @@ def repo() -> str:
 
 
 def pr_create(title: str, body: str, base: str = "main") -> tuple[int, str]:
-    args = ["pr", "create", "--base", base, "--title", title, "--repo", repo()]
-    if body:
-        args += ["--body", body]
+    args = ["pr", "create", "--base", base, "--title", title, "--body", body, "--repo", repo()]
     url = _gh(*args, capture=True)
     number = int(url.rstrip("/").split("/")[-1])
     return number, url
