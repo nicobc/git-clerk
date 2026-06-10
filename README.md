@@ -222,7 +222,7 @@ Displays the PR title and number, asks for confirmation, then executes in order:
 4. Pulls latest from `origin/main`
 5. Force-deletes the local branch
 
-You end up on a clean, up-to-date `main` in one step. If the local branch doesn't exist — because you're shipping someone else's PR, or because a previous partial run already cleaned it up — step 5 is skipped with a warning rather than erroring.
+You end up on a clean, up-to-date `main` in one step.
 
 **Options**
 

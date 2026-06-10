@@ -14,7 +14,7 @@ from git_clerk.cli import strip_comments
         ("some body\n\n# comment", "some body"),
         (
             "first paragraph\n\n# comment\n\nsecond paragraph",
-            "first paragraph\n\n\nsecond paragraph",
+            "first paragraph\n\nsecond paragraph",
         ),
         ("\n\nsome body\n\n", "some body"),
         ("a line with # hash inside", "a line with # hash inside"),

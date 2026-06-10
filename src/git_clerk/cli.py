@@ -24,7 +24,16 @@ class _Group(click.Group):
 
 
 def strip_comments(text: str) -> str:
-    return "\n".join(line for line in text.splitlines() if not line.startswith("#")).strip()
+    lines = [line for line in text.splitlines() if not line.startswith("#")]
+    collapsed: list[str] = []
+    prev_blank = False
+    for line in lines:
+        blank = not line.strip()
+        if blank and prev_blank:
+            continue
+        collapsed.append(line)
+        prev_blank = blank
+    return "\n".join(collapsed).strip()
 
 
 def _open_editor(hint: str) -> str:
@@ -191,10 +200,7 @@ def ship(update_branch: str | None, confirmed: bool) -> None:
     gh.pr_merge(number)
     git.switch_main()
     git.pull_origin_main()
-    if git.branch_exists(br):
-        git.delete_branch(br)
-    else:
-        click.echo(f"warning: local branch '{br}' not found, skipping delete", err=True)
+    git.delete_branch(br)
     if update_branch:
         git.switch_branch(update_branch)
         git.merge_origin_main()

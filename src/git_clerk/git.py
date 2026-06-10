@@ -80,7 +80,6 @@ def tags(pattern: str = "v*") -> list[str]:
 
 
 def create_tag(tag: str, ref: str = "origin/main") -> None:
-    fetch_tags()
     if tag in tags():
         raise RuntimeError(
             f"tag '{tag}' already exists — re-run 'git clerk release' to get the next version"
