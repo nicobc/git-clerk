@@ -23,14 +23,14 @@ class _Group(click.Group):
             raise click.ClickException(str(e)) from e
 
 
-def _strip_comments(text: str) -> str:
+def strip_comments(text: str) -> str:
     return "\n".join(line for line in text.splitlines() if not line.startswith("#")).strip()
 
 
 def _open_editor(hint: str) -> str:
     template = f"# {hint}\n# Lines starting with '#' are ignored.\n\n"
     raw = click.edit(template)
-    result = _strip_comments(raw or "")
+    result = strip_comments(raw or "")
     if not result:
         raise click.Abort()
     return result

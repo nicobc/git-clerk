@@ -1,6 +1,6 @@
 import pytest
 
-from git_clerk.cli import _strip_comments
+from git_clerk.cli import strip_comments
 
 
 @pytest.mark.parametrize(
@@ -32,4 +32,4 @@ from git_clerk.cli import _strip_comments
     ],
 )
 def test_strip_comments(raw: str, expected: str) -> None:
-    assert _strip_comments(raw) == expected
+    assert strip_comments(raw) == expected

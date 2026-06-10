@@ -31,6 +31,7 @@ git-clerk = "git_clerk.cli:main"
 dev = [
     "pyright>=1.1",
     "pytest>=8.0",
+    "pytest-subprocess>=1.5",
     "ruff>=0.4",
 ]
 
@@ -48,7 +49,7 @@ target-version = "py310"
 select = ["E", "F", "I", "UP"]
 
 [tool.pyright]
-include = ["src"]
+include = ["src", "tests"]
 pythonVersion = "3.10"
 typeCheckingMode = "strict"
 venvPath = "."
