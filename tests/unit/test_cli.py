@@ -1,6 +1,6 @@
 import pytest
 
-from git_clerk.cli import _strip_comments
+from git_clerk.cli import strip_comments
 
 
 @pytest.mark.parametrize(
@@ -14,7 +14,7 @@ from git_clerk.cli import _strip_comments
         ("some body\n\n# comment", "some body"),
         (
             "first paragraph\n\n# comment\n\nsecond paragraph",
-            "first paragraph\n\n\nsecond paragraph",
+            "first paragraph\n\nsecond paragraph",
         ),
         ("\n\nsome body\n\n", "some body"),
         ("a line with # hash inside", "a line with # hash inside"),
@@ -32,4 +32,4 @@ from git_clerk.cli import _strip_comments
     ],
 )
 def test_strip_comments(raw: str, expected: str) -> None:
-    assert _strip_comments(raw) == expected
+    assert strip_comments(raw) == expected

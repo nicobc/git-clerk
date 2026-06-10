@@ -74,8 +74,12 @@ def pr_merge(pr_number: int) -> None:
     _gh("pr", "merge", str(pr_number), "--squash", "--delete-branch", "--repo", repo())
 
 
+_CHECKS_POLL_INTERVAL = 5  # seconds
+_CHECKS_QUEUE_TIMEOUT = 90  # seconds to wait for checks to appear
+
+
 def pr_checks_watch(pr_number: int) -> None:
-    for _ in range(18):  # up to 90s
+    for _ in range(_CHECKS_QUEUE_TIMEOUT // _CHECKS_POLL_INTERVAL):
         out = _gh(
             "pr",
             "view",
@@ -88,5 +92,5 @@ def pr_checks_watch(pr_number: int) -> None:
         )
         if json.loads(out).get("statusCheckRollup"):
             break
-        time.sleep(5)
+        time.sleep(_CHECKS_POLL_INTERVAL)
     _gh("pr", "checks", str(pr_number), "--repo", repo(), "--watch")
