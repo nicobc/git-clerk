@@ -33,6 +33,7 @@ def git_repo(tmp_path: Path, bare_remote: Path, monkeypatch: pytest.MonkeyPatch)
     subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=local, check=True)
     subprocess.run(["git", "config", "user.name", "Test User"], cwd=local, check=True)
     subprocess.run(["git", "commit", "--allow-empty", "-m", "init"], cwd=local, check=True)
+    subprocess.run(["git", "branch", "-M", "main"], cwd=local, check=True)
     subprocess.run(["git", "push", "origin", "main"], cwd=local, check=True)
     monkeypatch.chdir(local)
     return local
