@@ -260,7 +260,7 @@ Tags the current tip of `origin/main` and pushes the tag. Supports CalVer and Se
 git-clerk fetches the latest tags, computes the next version, shows you what it's about to create, and asks for confirmation before pushing anything.
 
 ```sh
-git clerk release                      # auto-detect scheme, bump patch
+git clerk release                      # auto-detect scheme, prompt for bump if SemVer
 git clerk release --semver --bump minor
 git clerk release --semver --bump major
 git clerk release --calver
@@ -278,7 +278,7 @@ If both CalVer and SemVer tags are found (e.g. after a scheme migration), git-cl
 |------|-------------|
 | `--calver` | Use calendar versioning |
 | `--semver` | Use semantic versioning |
-| `--bump patch\|minor\|major` | SemVer component to increment (default: `patch`, ignored for CalVer) |
+| `--bump patch\|minor\|major` | SemVer component to increment; prompted if not provided (ignored for CalVer) |
 | `-y` / `--yes` | Skip the confirmation prompt |
 
 ## Versioning schemes

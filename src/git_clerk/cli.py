@@ -225,11 +225,11 @@ def watch() -> None:
 @click.option(
     "--bump",
     type=click.Choice(["patch", "minor", "major"]),
-    default="patch",
-    help="SemVer component to increment (ignored for CalVer).",
+    default=None,
+    help="SemVer component to increment (ignored for CalVer). Prompted if not provided.",
 )
 @click.option("-y", "--yes", "confirmed", is_flag=True, help="Skip confirmation prompt.")
-def release(scheme: Scheme | None, bump: str, confirmed: bool) -> None:
+def release(scheme: Scheme | None, bump: str | None, confirmed: bool) -> None:
     """Tag origin/main and push the tag.
 
     Auto-detects CalVer or SemVer from existing tags. Prompts for scheme on
@@ -252,7 +252,13 @@ def release(scheme: Scheme | None, bump: str, confirmed: bool) -> None:
             "Scheme", type=click.Choice([CALVER, SEMVER], case_sensitive=False), show_choices=False
         )
         scheme = CALVER if raw == CALVER else SEMVER
-    tag = next_calver(existing, date.today()) if scheme == CALVER else next_semver(existing, bump)
+    if scheme == CALVER:
+        tag = next_calver(existing, date.today())
+    else:
+        resolved_bump: str = bump or click.prompt(
+            "Bump", type=click.Choice(["patch", "minor", "major"]), show_choices=True
+        )
+        tag = next_semver(existing, resolved_bump)
     if not confirmed:
         click.confirm(f"Tag and push {tag}", abort=True)
     git.create_tag(tag)
