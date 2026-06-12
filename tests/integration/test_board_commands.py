@@ -277,10 +277,9 @@ class TestTicketStart:
         )
         result = runner.invoke(main, ["ticket", "start", "4"])
         assert result.exit_code != 0
-        expected = (
-            "Error: issue has no type label — run 'git clerk board setup' and label the issue\n"
+        assert result.output == (
+            "Error: Ticket #4 has no type label — run 'git clerk board setup' and label it\n"
         )
-        assert result.output == expected
 
 
 class TestTicketDiscard:

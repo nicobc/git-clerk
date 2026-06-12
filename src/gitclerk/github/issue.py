@@ -14,7 +14,7 @@ class MilestoneRef:
 class IssueInfo:
     number: int
     title: str
-    type: str
+    type: str | None
     milestone: MilestoneRef | None
 
 
@@ -90,9 +90,9 @@ def issue_close_not_planned(number: int) -> None:
     gh("issue", "close", str(number), "--reason", "not planned", "--repo", repo())
 
 
-def _extract_type(labels: list[dict[str, str]]) -> str:
+def _extract_type(labels: list[dict[str, str]]) -> str | None:
     for label in labels:
         name = label.get("name", "")
         if name.startswith("type: "):
             return name[6:]
-    raise RuntimeError("issue has no type label — run 'git clerk board setup' and label the issue")
+    return None

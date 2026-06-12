@@ -59,7 +59,8 @@ def ticket_list(epic_number: int | None) -> None:
     for i in issues:
         ms = i.milestone
         epic_str = f"epic #{ms.number}" if ms is not None else "no epic"
-        click.echo(f"#{i.number:<4} [{i.type:<10}] [{epic_str:<12}] {i.title}")
+        type_label = i.type or "—"
+        click.echo(f"#{i.number:<4} [{type_label:<10}] [{epic_str:<12}] {i.title}")
 
 
 @ticket.command(name="start")
@@ -67,12 +68,16 @@ def ticket_list(epic_number: int | None) -> None:
 def ticket_start(number: int) -> None:
     """Start work on a ticket: create branch and record the active issue."""
     issue_data = issue_view(number)
+    type_ = issue_data.type
+    if type_ is None:
+        raise click.ClickException(
+            f"Ticket #{number} has no type label — run 'git clerk board setup' and label it"
+        )
     ms = issue_data.milestone
     if ms is None:
         raise click.ClickException(f"Ticket #{number} has no epic — assign it to an epic first")
     m = milestone_view(ms.number)
     scope = m.scope
-    type_ = issue_data.type
     if not scope:
         raise click.ClickException(
             f"Epic #{ms.number} has no scope — its description must start with 'scope: SCOPE'"
