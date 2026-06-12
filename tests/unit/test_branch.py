@@ -1,6 +1,6 @@
 import pytest
 
-from git_clerk.branch import parse
+from gitclerk.git.branch import parse
 
 
 @pytest.mark.parametrize(

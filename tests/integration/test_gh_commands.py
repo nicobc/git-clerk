@@ -5,8 +5,10 @@ import pytest
 from click.testing import CliRunner
 from pytest_subprocess import FakeProcess
 
-from git_clerk import git
-from git_clerk.cli import main
+from gitclerk.cli import main
+from gitclerk.git.branch import branch_exists, current_branch, switch_new_branch
+from gitclerk.git.commit import add_all
+from gitclerk.git.commit import commit as git_commit
 
 FAKE_REPO = "test-owner/test-repo"
 PR_URL = f"https://github.com/{FAKE_REPO}/pull/1"
@@ -15,10 +17,10 @@ PR_URL = f"https://github.com/{FAKE_REPO}/pull/1"
 class TestPr:
     @pytest.fixture(autouse=True)
     def _on_feature_branch(self, git_repo_with_github_remote: Path) -> None:
-        git.switch_new_branch("feat/my-scope")
+        switch_new_branch("feat/my-scope")
         (git_repo_with_github_remote / "file.txt").write_text("hello")
-        git.add_all()
-        git.commit("feat(my-scope): add something")
+        add_all()
+        git_commit("feat(my-scope): add something")
 
     @pytest.fixture(autouse=True)
     def _register_gh_commands(self, fp: FakeProcess) -> None:
@@ -53,7 +55,7 @@ class TestPr:
 class TestShip:
     @pytest.fixture(autouse=True)
     def _on_feature_branch(self, git_repo_with_github_remote: Path) -> None:
-        git.switch_new_branch("feat/my-scope")
+        switch_new_branch("feat/my-scope")
 
     @pytest.fixture
     def _create_other_branch(self, git_repo_with_github_remote: Path) -> None:
@@ -80,20 +82,20 @@ class TestShip:
     def test_merges_pr_and_returns_to_main(self, runner: CliRunner) -> None:
         result = runner.invoke(main, ["ship", "-y"])
         assert result.exit_code == 0, result.output
-        assert git.current_branch() == "main"
-        assert not git.branch_exists("feat/my-scope")
+        assert current_branch() == "main"
+        assert not branch_exists("feat/my-scope")
 
     @pytest.mark.usefixtures("_create_other_branch")
     def test_switches_to_update_branch_after_ship(self, runner: CliRunner) -> None:
         result = runner.invoke(main, ["ship", "-y", "--update", "feat/other"])
         assert result.exit_code == 0, result.output
-        assert git.current_branch() == "feat/other"
+        assert current_branch() == "feat/other"
 
 
 class TestShipChecksFailure:
     @pytest.fixture(autouse=True)
     def _on_feature_branch(self, git_repo_with_github_remote: Path) -> None:
-        git.switch_new_branch("feat/my-scope")
+        switch_new_branch("feat/my-scope")
 
     @pytest.fixture(autouse=True)
     def _register_gh_commands(self, fp: FakeProcess) -> None:
@@ -121,7 +123,7 @@ class TestShipFromMain:
 class TestWatch:
     @pytest.fixture(autouse=True)
     def _on_feature_branch(self, git_repo_with_github_remote: Path) -> None:
-        git.switch_new_branch("feat/my-scope")
+        switch_new_branch("feat/my-scope")
 
     @pytest.fixture(autouse=True)
     def _register_gh_commands(self, fp: FakeProcess) -> None:

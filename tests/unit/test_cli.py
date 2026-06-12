@@ -1,6 +1,6 @@
 import pytest
 
-from git_clerk.cli import strip_comments
+from gitclerk.cli import strip_comments
 
 
 @pytest.mark.parametrize(

@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from git_clerk.release import CALVER, SEMVER, Scheme, detect_scheme, next_calver, next_semver
+from gitclerk.git.tag import CALVER, SEMVER, Scheme, detect_scheme, next_calver, next_semver
 
 
 @pytest.mark.parametrize(

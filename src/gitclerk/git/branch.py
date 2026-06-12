@@ -1,5 +1,7 @@
 import re
 
+from gitclerk.git import git
+
 TYPES = frozenset(
     [
         "build",
@@ -15,7 +17,6 @@ TYPES = frozenset(
         "test",
     ]
 )
-
 
 _BRANCH_RE = re.compile(r"([^/]+)/([^/]+)")
 _SCOPE_RE = re.compile(r"[a-z0-9][a-z0-9_-]*", re.IGNORECASE)
@@ -36,3 +37,39 @@ def parse(branch: str) -> tuple[str, str]:
             f"'{scope}' is not a valid scope. Use letters, digits, hyphens, and underscores."
         )
     return type_, scope
+
+
+def current_branch() -> str:
+    return git("branch", "--show-current", capture=True)
+
+
+def fetch_origin() -> None:
+    git("fetch", "origin")
+
+
+def switch_new_branch(name: str) -> None:
+    git("switch", "-c", name, "origin/main")
+
+
+def switch_main() -> None:
+    git("switch", "main")
+
+
+def pull_origin_main() -> None:
+    git("pull", "origin", "main")
+
+
+def branch_exists(name: str) -> bool:
+    return bool(git("branch", "--list", name, capture=True))
+
+
+def delete_branch(name: str) -> None:
+    git("branch", "-D", name)
+
+
+def switch_branch(name: str) -> None:
+    git("switch", name)
+
+
+def merge_origin_main() -> None:
+    git("merge", "origin/main")

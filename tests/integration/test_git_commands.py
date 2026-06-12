@@ -4,8 +4,9 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from git_clerk import git
-from git_clerk.cli import main
+from gitclerk.cli import main
+from gitclerk.git.branch import current_branch, switch_main, switch_new_branch
+from gitclerk.git.tag import tags
 
 
 def _commit_subject() -> str:
@@ -20,15 +21,15 @@ class TestBranch:
     def test_creates_branch_from_origin_main(self, git_repo: Path, runner: CliRunner) -> None:
         result = runner.invoke(main, ["branch", "feat/my-scope"])
         assert result.exit_code == 0, result.output
-        assert git.current_branch() == "feat/my-scope"
+        assert current_branch() == "feat/my-scope"
 
     def test_invalid_type_exits_nonzero(self, git_repo: Path, runner: CliRunner) -> None:
         result = runner.invoke(main, ["branch", "notatype/scope"])
         assert result.exit_code != 0
 
     def test_existing_branch_exits_nonzero(self, git_repo: Path, runner: CliRunner) -> None:
-        git.switch_new_branch("feat/my-scope")
-        git.switch_main()
+        switch_new_branch("feat/my-scope")
+        switch_main()
         result = runner.invoke(main, ["branch", "feat/my-scope"])
         assert result.exit_code != 0
 
@@ -36,7 +37,7 @@ class TestBranch:
 class TestCommit:
     @pytest.fixture(autouse=True)
     def _on_feature_branch(self, git_repo: Path) -> None:
-        git.switch_new_branch("feat/my-scope")
+        switch_new_branch("feat/my-scope")
 
     @pytest.fixture(autouse=True)
     def _add_file_to_repo(self, git_repo: Path) -> None:
@@ -85,18 +86,18 @@ class TestRelease:
     def test_calver_creates_tag(self, git_repo: Path, runner: CliRunner) -> None:
         result = runner.invoke(main, ["release", "--calver", "-y"])
         assert result.exit_code == 0, result.output
-        assert len(git.tags(pattern="*")) == 1
+        assert len(tags(pattern="*")) == 1
 
     def test_semver_creates_initial_tag(self, git_repo: Path, runner: CliRunner) -> None:
         result = runner.invoke(main, ["release", "--semver", "--bump", "patch", "-y"])
         assert result.exit_code == 0, result.output
-        assert "v0.1.0" in git.tags()
+        assert "v0.1.0" in tags()
 
     def test_semver_increments_existing_tag(self, git_repo: Path, runner: CliRunner) -> None:
         runner.invoke(main, ["release", "--semver", "--bump", "patch", "-y"])
         result = runner.invoke(main, ["release", "--semver", "--bump", "minor", "-y"])
         assert result.exit_code == 0, result.output
-        assert "v0.2.0" in git.tags()
+        assert "v0.2.0" in tags()
 
     def test_tag_is_pushed_to_remote(
         self, git_repo: Path, bare_remote: Path, runner: CliRunner

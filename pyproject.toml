@@ -25,7 +25,7 @@ Source = "https://github.com/nicobc/git-clerk"
 Issues = "https://github.com/nicobc/git-clerk/issues"
 
 [project.scripts]
-git-clerk = "git_clerk.cli:main"
+git-clerk = "gitclerk.cli:main"
 
 [dependency-groups]
 dev = [
@@ -39,7 +39,7 @@ dev = [
 testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/git_clerk"]
+packages = ["src/gitclerk"]
 
 [tool.ruff]
 line-length = 100
