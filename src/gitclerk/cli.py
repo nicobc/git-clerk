@@ -4,11 +4,34 @@ from datetime import date
 
 import click
 
-from git_clerk import git
-from git_clerk import github as gh
-from git_clerk.branch import TYPES
-from git_clerk.branch import parse as parse_branch
-from git_clerk.release import CALVER, SEMVER, Scheme, detect_scheme, next_calver, next_semver
+from gitclerk.git.branch import (
+    TYPES,
+    current_branch,
+    delete_branch,
+    fetch_origin,
+    merge_origin_main,
+    pull_origin_main,
+    switch_branch,
+    switch_main,
+    switch_new_branch,
+)
+from gitclerk.git.branch import (
+    parse as parse_branch,
+)
+from gitclerk.git.commit import add_all, push_head
+from gitclerk.git.commit import commit as git_commit
+from gitclerk.git.tag import (
+    CALVER,
+    SEMVER,
+    Scheme,
+    create_tag,
+    detect_scheme,
+    fetch_tags,
+    next_calver,
+    next_semver,
+    tags,
+)
+from gitclerk.github.pr import pr_checks_pass, pr_checks_watch, pr_create, pr_merge, pr_view
 
 TYPE_CHOICE = click.Choice(sorted(TYPES))
 
@@ -66,8 +89,8 @@ def branch(name: str) -> None:
         parse_branch(name)
     except ValueError as e:
         raise click.ClickException(str(e))
-    git.fetch_origin()
-    git.switch_new_branch(name)
+    fetch_origin()
+    switch_new_branch(name)
 
 
 @main.command()
@@ -107,7 +130,7 @@ def commit(
     """
     if body and edit_body:
         raise click.UsageError("BODY and --edit are mutually exclusive")
-    br = git.current_branch()
+    br = current_branch()
     try:
         type_, scope = parse_branch(br)
     except ValueError as e:
@@ -116,8 +139,8 @@ def commit(
     if edit_body:
         body = _open_editor(header)
     if stage_all:
-        git.add_all()
-    git.commit(header, body)
+        add_all()
+    git_commit(header, body)
 
 
 @main.command()
@@ -154,7 +177,7 @@ def pr(
     """
     if body and edit_body:
         raise click.UsageError("BODY and --edit are mutually exclusive")
-    br = git.current_branch()
+    br = current_branch()
     try:
         type_, scope = parse_branch(br)
     except ValueError as e:
@@ -162,10 +185,10 @@ def pr(
     pr_title = f"{type_override or type_}({scope_override or scope}): {title}"
     if edit_body:
         body = _open_editor(f"{pr_title} ({br})")
-    git.push_head()
-    number, url = gh.pr_create(pr_title, body or "")
+    push_head()
+    number, url = pr_create(pr_title, body or "")
     click.echo(url)
-    gh.pr_checks_watch(number)
+    pr_checks_watch(number)
 
 
 @main.command()
@@ -184,33 +207,33 @@ def ship(update_branch: str | None, confirmed: bool) -> None:
     Squash-merges the current branch's PR, deletes the remote branch, switches
     to local main, pulls, and force-deletes the local branch.
     """
-    br = git.current_branch()
+    br = current_branch()
     if br == "main":
         raise click.ClickException("run 'git clerk ship' from the feature branch, not main")
-    number, title = gh.pr_view()
+    number, title = pr_view()
     prompt = f'Ship "{title}" (#{number})'
     if update_branch:
         prompt += f", then update {update_branch}"
     if not confirmed:
         click.confirm(prompt, abort=True)
-    if not gh.pr_checks_pass(number):
+    if not pr_checks_pass(number):
         raise click.ClickException(
             f"PR #{number} has failing or pending checks — run 'git clerk watch' to monitor"
         )
-    gh.pr_merge(number)
-    git.switch_main()
-    git.pull_origin_main()
-    git.delete_branch(br)
+    pr_merge(number)
+    switch_main()
+    pull_origin_main()
+    delete_branch(br)
     if update_branch:
-        git.switch_branch(update_branch)
-        git.merge_origin_main()
+        switch_branch(update_branch)
+        merge_origin_main()
 
 
 @main.command()
 def watch() -> None:
     """Watch CI checks for the current PR."""
-    number, _ = gh.pr_view()
-    gh.pr_checks_watch(number)
+    number, _ = pr_view()
+    pr_checks_watch(number)
 
 
 @main.command()
@@ -241,8 +264,8 @@ def release(scheme: Scheme | None, bump: str | None, confirmed: bool) -> None:
     Auto-detects CalVer or SemVer from existing tags. Prompts for scheme on
     first use. Pass --calver or --semver to skip the prompt.
     """
-    git.fetch_tags()
-    existing = git.tags()
+    fetch_tags()
+    existing = tags()
     if not scheme:
         try:
             scheme = detect_scheme(existing)
@@ -267,5 +290,5 @@ def release(scheme: Scheme | None, bump: str | None, confirmed: bool) -> None:
         tag = next_semver(existing, resolved_bump)
     if not confirmed:
         click.confirm(f"Tag and push {tag}", abort=True)
-    git.create_tag(tag)
+    create_tag(tag)
     click.echo(f"Tagged and pushed {tag}")
