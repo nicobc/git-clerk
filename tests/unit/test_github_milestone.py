@@ -1,40 +1,26 @@
 import pytest
 
-from gitclerk.github.milestone import parse_epic_body
+from gitclerk.github.milestone import parse_description
 
 
 @pytest.mark.parametrize(
-    "text, expected_description, expected_notes",
+    "raw, expected_scope, expected_description",
     [
-        ("", "", []),
-        ("  ", "", []),
-        ("A description.", "A description.", []),
-        (
-            "A description.\n\nNotes:\n- note one\n- note two",
-            "A description.",
-            ["note one", "note two"],
-        ),
-        (
-            "Desc.\n\nNotes:\n- first\n- second\nignored line",
-            "Desc.",
-            ["first", "second"],
-        ),
-        (
-            "Multi-line desc.\nSecond line.\n\nNotes:\n- a note",
-            "Multi-line desc.\nSecond line.",
-            ["a note"],
-        ),
+        ("", "", ""),
+        ("scope: auth", "auth", ""),
+        ("scope: auth\n\nBuild authentication.", "auth", "Build authentication."),
+        ("scope: auth\n\nLine one.\nLine two.", "auth", "Line one.\nLine two."),
+        ("No scope prefix here.", "", "No scope prefix here."),
     ],
     ids=[
         "empty",
-        "whitespace_only",
-        "description_only",
-        "description_and_notes",
-        "notes_ignores_non_list_lines",
-        "multiline_description",
+        "scope_only",
+        "scope_and_description",
+        "scope_and_multiline_description",
+        "no_scope",
     ],
 )
-def test_parse_epic_body(text: str, expected_description: str, expected_notes: list[str]) -> None:
-    description, notes = parse_epic_body(text)
+def test_parse_description(raw: str, expected_scope: str, expected_description: str) -> None:
+    scope, description = parse_description(raw)
+    assert scope == expected_scope
     assert description == expected_description
-    assert notes == expected_notes

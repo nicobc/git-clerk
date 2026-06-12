@@ -99,12 +99,12 @@ def ship(update_branch: str | None, confirmed: bool) -> None:
             f"PR #{pr_number} has failing or pending checks — run 'git clerk watch' to monitor"
         )
     active = get_active_issue()
-    epic_number: int | None = None
+    milestone_number: int | None = None
     if active is not None:
         issue_data = issue_view(active)
         ms = issue_data.milestone
         if ms is not None:
-            epic_number = ms.number
+            milestone_number = ms.number
     pr_merge(pr_number)
     switch_main()
     pull_origin_main()
@@ -114,11 +114,11 @@ def ship(update_branch: str | None, confirmed: bool) -> None:
         merge_origin_main()
     if active is not None:
         clear_active_issue()
-    if epic_number is not None:
-        m = milestone_view(epic_number)
+    if milestone_number is not None:
+        m = milestone_view(milestone_number)
         if m.open_issues == 0:
-            milestone_close(epic_number)
-            click.echo(f'Epic #{epic_number} "{m.title}" completed and closed.')
+            milestone_close(milestone_number)
+            click.echo(f'Milestone #{milestone_number} "{m.title}" completed and closed.')
 
 
 @click.command()

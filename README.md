@@ -1,5 +1,10 @@
 # git-clerk
 
+[![PyPI version](https://img.shields.io/pypi/v/git-clerk)](https://pypi.org/project/git-clerk/)
+[![Python versions](https://img.shields.io/pypi/pyversions/git-clerk)](https://pypi.org/project/git-clerk/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/nicobc/git-clerk/actions/workflows/test.yml/badge.svg)](https://github.com/nicobc/git-clerk/actions/workflows/test.yml)
+
 A structured git workflow CLI for [conventional commits](https://www.conventionalcommits.org/), trunk-based branching, and a clean GitHub PR lifecycle — all from the command line.
 
 ## Philosophy
@@ -117,6 +122,74 @@ git clerk release
 
 Detects your versioning scheme from existing tags, computes the next version, shows you the tag, and asks for confirmation before pushing. On a fresh repo with no tags, it prompts you to choose CalVer or SemVer.
 
+## Board workflow
+
+The board commands add a lightweight project layer on top of the core workflow using GitHub Milestones and Issues. They are optional, the branch/commit/pr/ship workflow works the same with or without them.
+
+**One-time setup**
+
+```sh
+git clerk board setup
+```
+
+Creates a `type: <type>` label for each of the 11 conventional commit types in the repository. These labels are what make issues startable.
+
+**Create a milestone**
+
+```sh
+git clerk milestone new "Auth System" --scope auth
+# Milestone #1 created.
+
+git clerk milestone new "Auth System" "Handles login, registration, and SSO." --scope auth
+# → with inline description
+
+git clerk milestone new "Auth System" --scope auth -e
+# → opens $EDITOR for the description
+```
+
+The `--scope` is used to derive branch names for all issues in this milestone. Every issue started under the milestone will live on a `type/scope` branch.
+
+**Create issues**
+
+```sh
+git clerk issue new "Add login form" --type feat --milestone 1
+git clerk issue new "Fix token expiry" --type fix --milestone 1
+git clerk issue new "Write auth docs" --type docs --milestone 1
+```
+
+Issues can be created without a type or milestone — they'll sit in the backlog until labelled and assigned. Both are required to start work.
+
+**Start an issue**
+
+```sh
+git clerk issue start 1
+# On branch 'feat/auth', active issue is #1.
+```
+
+Creates the branch from the milestone's scope (`feat/auth`), switches to it, and records the active issue in local git config. From here, the standard commit/PR/ship workflow applies.
+
+**PR body gets `Closes #N` automatically**
+
+Because `issue start` recorded the active issue, `git clerk pr` appends `Closes #1` to the PR body without any extra flags. The issue is closed on GitHub when the PR is squash-merged.
+
+**Ship closes the milestone when all issues are done**
+
+```sh
+git clerk ship
+```
+
+Clears the active issue after merging. If the milestone has no remaining open issues, git-clerk closes it automatically and prints a confirmation.
+
+**Other board commands**
+
+```sh
+git clerk milestone list                 # list open milestones with issue counts
+git clerk milestone reopen 1             # reopen a closed milestone
+git clerk issue list                     # list open issues (all milestones)
+git clerk issue list --milestone 1       # filter by milestone
+git clerk issue discard 3                # close an issue as not planned
+```
+
 ## Commands
 
 ### `branch TYPE/scope`
@@ -206,6 +279,8 @@ An empty string passed as BODY is treated the same as no body.
 
 The PR URL is printed to stdout as soon as the PR is created, before CI checks begin — you can share it while checks are still running. If checks fail, the run ends with a non-zero exit code.
 
+If `issue start` was used to begin work on the current branch, `pr` automatically appends `Closes #N` to the PR body so the linked issue is closed when the PR merges.
+
 ### `ship`
 
 Squash-merges the current branch's PR and brings your local environment back to a clean state on `main`. Must be run from the feature branch, not from `main`.
@@ -223,6 +298,8 @@ Displays the PR title and number, asks for confirmation, then executes in order:
 5. Force-deletes the local branch
 
 You end up on a clean, up-to-date `main` in one step.
+
+If the branch was started with `issue start`, `ship` also clears the active issue from local git config. If the linked issue's milestone has no remaining open issues after the merge, the milestone is closed automatically.
 
 **Options**
 
@@ -251,6 +328,93 @@ Re-attaches to CI checks for the current branch's PR. Useful when you want to ch
 
 ```sh
 git clerk watch
+```
+
+### `board setup`
+
+Creates a `type: <type>` GitHub label for each of the 11 conventional commit types. Safe to run more than once — existing labels are updated with `--force`. Required before issues can be started.
+
+```sh
+git clerk board setup
+```
+
+### `milestone new TITLE [DESCRIPTION]`
+
+Creates a GitHub Milestone. The `--scope` option is required and determines the branch name prefix used by all issues in this milestone.
+
+```sh
+git clerk milestone new "Auth System" --scope auth
+git clerk milestone new "Auth System" "Handles login and SSO." --scope auth
+git clerk milestone new "Auth System" --scope auth -e    # opens $EDITOR
+```
+
+**Options**
+
+| Flag | Description |
+|------|-------------|
+| `--scope SCOPE` | Branch scope for all issues in this milestone (required) |
+| `-e` | Open `$EDITOR` for the description |
+
+### `milestone list`
+
+Lists open milestones with their scope and open/closed issue counts.
+
+```sh
+git clerk milestone list
+```
+
+### `milestone reopen NUMBER`
+
+Reopens a closed milestone.
+
+```sh
+git clerk milestone reopen 1
+```
+
+### `issue new TITLE [BODY]`
+
+Creates a GitHub Issue. Type and milestone are optional at creation time — an issue without them sits in the backlog and can be labelled and assigned later. Both are required before `issue start` can be used.
+
+```sh
+git clerk issue new "Add login form"
+git clerk issue new "Add login form" --type feat --milestone 1
+git clerk issue new "Add login form" --type feat --milestone 1 -e
+```
+
+**Options**
+
+| Flag | Description |
+|------|-------------|
+| `--type TYPE` | Conventional commit type label |
+| `--milestone NUMBER` | Milestone number |
+| `-e` | Open `$EDITOR` for the issue body |
+
+### `issue list`
+
+Lists open issues. Filters to a specific milestone with `--milestone`.
+
+```sh
+git clerk issue list
+git clerk issue list --milestone 1
+```
+
+### `issue start NUMBER`
+
+Starts work on an issue: creates the branch from the milestone's scope, switches to it, and records the active issue in local git config. Requires the issue to have a type label and be assigned to a milestone.
+
+```sh
+git clerk issue start 1
+# On branch 'feat/auth', active issue is #1.
+```
+
+The recorded active issue is used by `pr` (to append `Closes #N`) and cleared by `ship` (after merging).
+
+### `issue discard NUMBER`
+
+Closes an issue as "not planned".
+
+```sh
+git clerk issue discard 3
 ```
 
 ### `release`
