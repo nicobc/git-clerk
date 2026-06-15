@@ -126,14 +126,6 @@ Detects your versioning scheme from existing tags, computes the next version, sh
 
 The board commands add a lightweight project layer on top of the core workflow using GitHub Milestones and Issues. They are optional, the branch/commit/pr/ship workflow works the same with or without them.
 
-**One-time setup**
-
-```sh
-git clerk board setup
-```
-
-Creates a `type: <type>` label for each of the 11 conventional commit types in the repository. These labels are what make issues startable.
-
 **Create a milestone**
 
 ```sh
@@ -157,7 +149,7 @@ git clerk issue new "Fix token expiry" --type fix --milestone 1
 git clerk issue new "Write auth docs" --type docs --milestone 1
 ```
 
-Issues can be created without a type or milestone — they'll sit in the backlog until labelled and assigned. Both are required to start work.
+A type is required. A milestone is optional at creation time — an issue without one sits in the backlog. Both are required before `issue start` can be used.
 
 **Start an issue**
 
@@ -330,14 +322,6 @@ Re-attaches to CI checks for the current branch's PR. Useful when you want to ch
 git clerk watch
 ```
 
-### `board setup`
-
-Creates a `type: <type>` GitHub label for each of the 11 conventional commit types. Safe to run more than once — existing labels are updated with `--force`. Required before issues can be started.
-
-```sh
-git clerk board setup
-```
-
 ### `milestone new TITLE [DESCRIPTION]`
 
 Creates a GitHub Milestone. The `--scope` option is required and determines the branch name prefix used by all issues in this milestone.
@@ -373,10 +357,10 @@ git clerk milestone reopen 1
 
 ### `issue new TITLE [BODY]`
 
-Creates a GitHub Issue. Type and milestone are optional at creation time — an issue without them sits in the backlog and can be labelled and assigned later. Both are required before `issue start` can be used.
+Creates a GitHub Issue. `--type` is required. `--milestone` is optional — an issue without one sits in the backlog. Both are required before `issue start` can be used. Type labels are created in the repository automatically on first use.
 
 ```sh
-git clerk issue new "Add login form"
+git clerk issue new "Add login form" --type feat
 git clerk issue new "Add login form" --type feat --milestone 1
 git clerk issue new "Add login form" --type feat --milestone 1 -e
 ```
@@ -385,7 +369,7 @@ git clerk issue new "Add login form" --type feat --milestone 1 -e
 
 | Flag | Description |
 |------|-------------|
-| `--type TYPE` | Conventional commit type label |
+| `--type TYPE` | Conventional commit type label (required) |
 | `--milestone NUMBER` | Milestone number |
 | `-e` | Open `$EDITOR` for the issue body |
 
