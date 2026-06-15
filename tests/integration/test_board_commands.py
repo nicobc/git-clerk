@@ -14,33 +14,6 @@ MILESTONE_API = f"repos/{FAKE_REPO}/milestones"
 ISSUE_FIELDS = "number,title,labels,milestone"
 
 
-class TestBoardSetup:
-    @pytest.fixture(autouse=True)
-    def _register_gh_commands(self, fp: FakeProcess) -> None:
-        for type_ in TYPES:
-            color = TYPE_COLORS.get(type_, "ededed")
-            fp.register(  # pyright: ignore[reportUnknownMemberType]
-                [
-                    "gh",
-                    "label",
-                    "create",
-                    f"type: {type_}",
-                    "--color",
-                    color,
-                    "--force",
-                    "--repo",
-                    FAKE_REPO,
-                ],
-            )
-
-    def test_creates_type_labels(
-        self, git_repo_with_github_remote: Path, runner: CliRunner
-    ) -> None:
-        result = runner.invoke(main, ["board", "setup"])
-        assert result.exit_code == 0, result.output
-        assert result.output == "Board labels ready.\n"
-
-
 class TestMilestoneNew:
     def test_creates_milestone(
         self, git_repo_with_github_remote: Path, runner: CliRunner, fp: FakeProcess
@@ -131,10 +104,62 @@ class TestIssueNew:
         self, git_repo_with_github_remote: Path, runner: CliRunner, fp: FakeProcess
     ) -> None:
         fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "issue", "create", "--title", "Add login", "--body", "", "--repo", FAKE_REPO],
+            [
+                "gh",
+                "issue",
+                "create",
+                "--title",
+                "Add login",
+                "--body",
+                "",
+                "--repo",
+                FAKE_REPO,
+                "--label",
+                "type: feat",
+            ],
             stdout=f"https://github.com/{FAKE_REPO}/issues/1",
         )
-        result = runner.invoke(main, ["issue", "new", "Add login"])
+        result = runner.invoke(main, ["issue", "new", "Add login", "--type", "feat"])
+        assert result.exit_code == 0, result.output
+        assert result.output == "Issue #1 created.\n"
+
+    def test_auto_creates_labels_on_missing_label(
+        self, git_repo_with_github_remote: Path, runner: CliRunner, fp: FakeProcess
+    ) -> None:
+        create_args = [
+            "gh",
+            "issue",
+            "create",
+            "--title",
+            "Add login",
+            "--body",
+            "",
+            "--repo",
+            FAKE_REPO,
+            "--label",
+            "type: feat",
+        ]
+        fp.register(create_args, returncode=1)  # pyright: ignore[reportUnknownMemberType]
+        for type_ in TYPES:
+            color = TYPE_COLORS.get(type_, "ededed")
+            fp.register(  # pyright: ignore[reportUnknownMemberType]
+                [
+                    "gh",
+                    "label",
+                    "create",
+                    f"type: {type_}",
+                    "--color",
+                    color,
+                    "--force",
+                    "--repo",
+                    FAKE_REPO,
+                ],
+            )
+        fp.register(  # pyright: ignore[reportUnknownMemberType]
+            create_args,
+            stdout=f"https://github.com/{FAKE_REPO}/issues/1",
+        )
+        result = runner.invoke(main, ["issue", "new", "Add login", "--type", "feat"])
         assert result.exit_code == 0, result.output
         assert result.output == "Issue #1 created.\n"
 
@@ -278,7 +303,7 @@ class TestIssueStart:
         result = runner.invoke(main, ["issue", "start", "4"])
         assert result.exit_code != 0
         assert result.output == (
-            "Error: Issue #4 has no type label — run 'git clerk board setup' and label it\n"
+            "Error: Issue #4 has no type label — assign a 'type: TYPE' label on GitHub\n"
         )
 
 

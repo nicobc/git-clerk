@@ -15,7 +15,7 @@ def issue() -> None:
 @issue.command(name="new")
 @click.argument("title")
 @click.argument("body", required=False, default=None)
-@click.option("--type", "type_", default=None, type=TYPE_CHOICE, help="Issue type label.")
+@click.option("--type", "type_", required=True, type=TYPE_CHOICE, help="Issue type label.")
 @click.option(
     "--milestone",
     "milestone_number",
@@ -28,7 +28,7 @@ def issue() -> None:
 def new_issue(
     title: str,
     body: str | None,
-    type_: str | None,
+    type_: str,
     milestone_number: int | None,
     edit_body: bool,
 ) -> None:
@@ -37,7 +37,7 @@ def new_issue(
         raise click.UsageError("BODY and --edit are mutually exclusive")
     if edit_body:
         body = open_editor(title)
-    number = issue_create(title, body or "", type_, milestone_number)
+    number = issue_create(title, type_, body or "", milestone_number)
     click.echo(f"Issue #{number} created.")
 
 
@@ -69,10 +69,6 @@ def start_issue(number: int) -> None:
     """Start work on an issue: create branch and record the active issue."""
     issue_data = issue_view(number)
     type_ = issue_data.type
-    if type_ is None:
-        raise click.ClickException(
-            f"Issue #{number} has no type label — run 'git clerk board setup' and label it"
-        )
     ms = issue_data.milestone
     if ms is None:
         raise click.ClickException(

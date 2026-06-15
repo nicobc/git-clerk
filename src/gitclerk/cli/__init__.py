@@ -1,6 +1,5 @@
 import click
 
-from gitclerk.cli.board import board
 from gitclerk.cli.branch import branch
 from gitclerk.cli.commit import commit
 from gitclerk.cli.issue import issue
@@ -29,6 +28,5 @@ main.add_command(pr)
 main.add_command(ship)
 main.add_command(watch)
 main.add_command(release)
-main.add_command(board)
 main.add_command(milestone)
 main.add_command(issue)

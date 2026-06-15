@@ -1,7 +1,9 @@
 import json
+import subprocess
 from dataclasses import dataclass
 
 from gitclerk.github import gh, repo
+from gitclerk.github.label import ensure_type_labels
 
 
 @dataclass
@@ -14,22 +16,35 @@ class MilestoneRef:
 class IssueInfo:
     number: int
     title: str
-    type: str | None
+    type: str
     milestone: MilestoneRef | None
 
 
 def issue_create(
     title: str,
+    type_label: str,
     body: str = "",
-    type_label: str | None = None,
     milestone: int | None = None,
 ) -> int:
-    args = ["issue", "create", "--title", title, "--body", body, "--repo", repo()]
-    if type_label:
-        args += ["--label", f"type: {type_label}"]
+    args = [
+        "issue",
+        "create",
+        "--title",
+        title,
+        "--body",
+        body,
+        "--repo",
+        repo(),
+        "--label",
+        f"type: {type_label}",
+    ]
     if milestone is not None:
         args += ["--milestone", str(milestone)]
-    url = gh(*args, capture=True)
+    try:
+        url = gh(*args, capture=True)
+    except subprocess.CalledProcessError:
+        ensure_type_labels()
+        url = gh(*args, capture=True)
     return int(url.rstrip("/").split("/")[-1])
 
 
@@ -54,7 +69,7 @@ def issue_list(milestone: int | None = None) -> list[IssueInfo]:
             IssueInfo(
                 number=int(raw["number"]),
                 title=str(raw["title"]),
-                type=_extract_type(raw["labels"]),
+                type=_extract_type(raw["labels"]) or "",
                 milestone=MilestoneRef(number=int(ms_raw["number"]), title=str(ms_raw["title"]))
                 if ms_raw
                 else None,
@@ -76,10 +91,15 @@ def issue_view(number: int) -> IssueInfo:
     )
     raw = json.loads(out)
     ms_raw = raw["milestone"]
+    type_ = _extract_type(raw["labels"])
+    if not type_:
+        raise RuntimeError(
+            f"Issue #{number} has no type label — assign a 'type: TYPE' label on GitHub"
+        )
     return IssueInfo(
         number=int(raw["number"]),
         title=str(raw["title"]),
-        type=_extract_type(raw["labels"]),
+        type=type_,
         milestone=MilestoneRef(number=int(ms_raw["number"]), title=str(ms_raw["title"]))
         if ms_raw
         else None,
