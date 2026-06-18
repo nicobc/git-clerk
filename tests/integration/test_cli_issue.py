@@ -78,6 +78,13 @@ def test_auto_creates_labels_when_missing(runner: CliRunner, fp: FakeProcess) ->
 @pytest.mark.usefixtures("git_repo_with_github_remote")
 def test_creates_issue_with_milestone(runner: CliRunner, fp: FakeProcess) -> None:
     fp.register(  # pyright: ignore[reportUnknownMemberType]
+        ["gh", "api", f"{MILESTONE_API}/1"],
+        stdout=(
+            '{"number": 1, "title": "Foundation", "description": "scope: foundation",'
+            ' "open_issues": 0, "state": "open"}'
+        ),
+    )
+    fp.register(  # pyright: ignore[reportUnknownMemberType]
         [
             "gh",
             "issue",
@@ -91,7 +98,7 @@ def test_creates_issue_with_milestone(runner: CliRunner, fp: FakeProcess) -> Non
             "--label",
             "type: feat",
             "--milestone",
-            "1",
+            "Foundation",
         ],
         stdout=f"https://github.com/{FAKE_REPO}/issues/2",
     )
