@@ -58,5 +58,17 @@ def pr_checks_watch(pr_number: int) -> None:
         )
         if json.loads(out).get("statusCheckRollup"):
             break
+        try:
+            subprocess.run(
+                ["gh", "pr", "checks", str(pr_number), "--repo", repo()],
+                check=True,
+                text=True,
+                capture_output=True,
+            )
+            break
+        except subprocess.CalledProcessError as e:
+            if "no checks reported" in (e.stderr or ""):
+                print(e.stderr.strip())
+                return
         time.sleep(_CHECKS_POLL_INTERVAL)
     gh("pr", "checks", str(pr_number), "--repo", repo(), "--watch")
