@@ -26,9 +26,17 @@ def pr_view() -> tuple[int, str]:
 
 def pr_checks_pass(pr_number: int) -> bool:
     try:
-        gh("pr", "checks", str(pr_number), "--repo", repo(), capture=True)
+        subprocess.run(
+            ["gh", "pr", "checks", str(pr_number), "--repo", repo()],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
         return True
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        if "no checks reported" in (e.stderr or ""):
+            print(e.stderr.strip())
+            return True
         return False
 
 

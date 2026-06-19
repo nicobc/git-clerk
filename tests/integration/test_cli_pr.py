@@ -95,10 +95,20 @@ class TestShip:
         assert result.exit_code == 0, result.output
         assert current_branch() == "feat/other"
 
+    def test_ships_when_no_checks_reported(self, runner: CliRunner, fp: FakeProcess) -> None:
+        fp.register(  # pyright: ignore[reportUnknownMemberType]
+            ["gh", "pr", "checks", "1", "--repo", FAKE_REPO],
+            returncode=1,
+            stderr="no checks reported on the 'feat/my-scope' branch",
+        )
+        result = runner.invoke(main, ["ship", "-y"])
+        assert result.exit_code == 0, result.output
+
     def test_fails_if_checks_failing(self, runner: CliRunner, fp: FakeProcess) -> None:
         fp.register(  # pyright: ignore[reportUnknownMemberType]
             ["gh", "pr", "checks", "1", "--repo", FAKE_REPO],
             returncode=1,
+            stderr="some checks are failing",
         )
         result = runner.invoke(main, ["ship", "-y"])
         assert result.exit_code == 1
