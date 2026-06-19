@@ -215,3 +215,39 @@ class TestWatch:
     def test_watches_ci_for_current_pr(self, runner: CliRunner) -> None:
         result = runner.invoke(main, ["watch"])
         assert result.exit_code == 0, result.output
+
+
+class TestWatchNoCi:
+    @pytest.fixture(autouse=True)
+    def _setup(self, git_repo_with_github_remote: Path, fp: FakeProcess) -> None:
+        switch_new_branch("feat/my-scope")
+        fp.register(  # pyright: ignore[reportUnknownMemberType]
+            ["gh", "pr", "view", "feat/my-scope", "--repo", FAKE_REPO, "--json", "number,title"],
+            stdout='{"number": 1, "title": "feat(my-scope): add something"}',
+        )
+        fp.register(  # pyright: ignore[reportUnknownMemberType]
+            ["gh", "pr", "view", "1", "--repo", FAKE_REPO, "--json", "statusCheckRollup"],
+            stdout='{"statusCheckRollup": null}',
+        )
+
+    def test_returns_immediately_when_no_checks(self, runner: CliRunner, fp: FakeProcess) -> None:
+        fp.register(  # pyright: ignore[reportUnknownMemberType]
+            ["gh", "pr", "checks", "1", "--repo", FAKE_REPO],
+            returncode=1,
+            stderr="no checks reported on the 'feat/my-scope' branch",
+        )
+        result = runner.invoke(main, ["watch"])
+        assert result.exit_code == 0, result.output
+
+    def test_watches_when_checks_pass_during_polling(
+        self, runner: CliRunner, fp: FakeProcess
+    ) -> None:
+        fp.register(  # pyright: ignore[reportUnknownMemberType]
+            ["gh", "pr", "checks", "1", "--repo", FAKE_REPO],
+            stdout="All checks pass",
+        )
+        fp.register(  # pyright: ignore[reportUnknownMemberType]
+            ["gh", "pr", "checks", "1", "--repo", FAKE_REPO, "--watch"],
+        )
+        result = runner.invoke(main, ["watch"])
+        assert result.exit_code == 0, result.output
