@@ -16,7 +16,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from gitclerk.git.tag import compute_next_semver, fetch_tags, list_tags
+from gitclerk.git.tag import compute_next_semver, fetch_tags, latest_semver_tag, list_tags
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PYPROJECT = REPO_ROOT / "pyproject.toml"
@@ -25,6 +25,8 @@ RUN_POLL_INTERVAL = 5  # seconds between checks for the publish run to appear
 RUN_QUEUE_TIMEOUT = 60  # give up if the publish run has not appeared within this many seconds
 
 _VERSION_RE = re.compile(r'^version = ".*"', re.MULTILINE)
+_HEADER_RE = re.compile(r"(?P<type>\w+)(\([^)]*\))?!?:")  # conventional commit header
+_BUMP_RANK = {"patch": 0, "minor": 1, "major": 2}
 
 
 def run(*command: str) -> None:
@@ -42,6 +44,21 @@ def write_pyproject_version(new_version: str) -> None:
     if not replaced:
         raise SystemExit("release: no version line found in pyproject.toml")
     PYPROJECT.write_text(new_text)
+
+
+def required_bump_since(tag: str) -> str:
+    """The minimum bump justified by the commits since `tag`.
+
+    `feat` since the last release implies `minor`; everything else, `patch`. `major` is
+    never inferred — there is no breaking-change marker in the squash history, and pre-1.0
+    a breaking change does not imply a major bump anyway.
+    """
+    subjects = capture("git", "log", f"{tag}..origin/main", "--format=%s").splitlines()
+    for subject in subjects:
+        header = _HEADER_RE.match(subject)
+        if header is not None and header.group("type") == "feat":
+            return "minor"
+    return "patch"
 
 
 def wait_for_publish_run(tag: str) -> str:
@@ -75,7 +92,18 @@ def main() -> None:
     bump = parser.parse_args().bump
 
     fetch_tags()
-    new_tag = compute_next_semver(list_tags(), bump)
+    tags = list_tags()
+
+    last_tag = latest_semver_tag(tags)
+    if last_tag is not None:
+        floor = required_bump_since(last_tag)
+        if _BUMP_RANK[bump] < _BUMP_RANK[floor]:
+            raise SystemExit(
+                f"release: commits since {last_tag} include a feat — bump must be at least "
+                f"'{floor}', got '{bump}'"
+            )
+
+    new_tag = compute_next_semver(tags, bump)
     write_pyproject_version(new_tag.removeprefix("v"))
 
     title = f"bump version to {new_tag.removeprefix('v')}"
