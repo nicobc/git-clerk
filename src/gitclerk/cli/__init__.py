@@ -1,5 +1,6 @@
 import click
 
+from gitclerk.cli.board import board
 from gitclerk.cli.branch import branch
 from gitclerk.cli.commit import commit
 from gitclerk.cli.issue import issue
@@ -22,6 +23,7 @@ def main(ctx: click.Context) -> None:
         click.echo(ctx.get_help())
 
 
+main.add_command(board)
 main.add_command(branch)
 main.add_command(commit)
 main.add_command(pr)

@@ -63,7 +63,21 @@ def test_lists_milestones(runner: CliRunner, fp: FakeProcess) -> None:
     )
     result = runner.invoke(main, ["milestone", "list"])
     assert result.exit_code == 0, result.output
-    assert result.output == "#1 Auth System scope: auth [3 open, 1 closed]\n"
+    assert result.output == ("test-repo milestones:\n#1  Auth System — 3 issues open, 1 closed\n")
+
+
+@pytest.mark.usefixtures("git_repo_with_github_remote")
+def test_omits_closed_count_when_zero(runner: CliRunner, fp: FakeProcess) -> None:
+    fp.register(  # pyright: ignore[reportUnknownMemberType]
+        ["gh", "api", MILESTONE_API, "-X", "GET", "-f", "state=open"],
+        stdout=(
+            '[{"number": 2, "title": "Portfolio", "description": "scope: portfolio",'
+            ' "open_issues": 2, "closed_issues": 0}]'
+        ),
+    )
+    result = runner.invoke(main, ["milestone", "list"])
+    assert result.exit_code == 0, result.output
+    assert result.output == "test-repo milestones:\n#2  Portfolio — 2 issues open\n"
 
 
 @pytest.mark.usefixtures("git_repo_with_github_remote")

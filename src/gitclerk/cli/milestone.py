@@ -1,11 +1,28 @@
 import click
 
 from gitclerk.cli.shared import CLIGroup, open_editor
+from gitclerk.github import repo
 from gitclerk.github.milestone import (
+    MilestoneListItem,
     milestone_create,
     milestone_list,
     milestone_reopen,
 )
+
+
+def get_repo_name() -> str:
+    return repo().split("/")[-1]
+
+
+def format_milestone_line(milestone_list_item: MilestoneListItem) -> str:
+    noun = "issue" if milestone_list_item.open_issues == 1 else "issues"
+    closed = (
+        f", {milestone_list_item.closed_issues} closed" if milestone_list_item.closed_issues else ""
+    )
+    return (
+        f"#{milestone_list_item.number}  {milestone_list_item.title} — "
+        f"{milestone_list_item.open_issues} {noun} open{closed}"
+    )
 
 
 @click.group(cls=CLIGroup)
@@ -35,11 +52,9 @@ def list_milestones() -> None:
     if not milestones:
         click.echo("No open milestones.")
         return
-    for m in milestones:
-        scope = m.scope or "—"
-        click.echo(
-            f"#{m.number} {m.title} scope: {scope} [{m.open_issues} open, {m.closed_issues} closed]"
-        )
+    click.echo(f"{get_repo_name()} milestones:")
+    for milestone_list_item in milestones:
+        click.echo(format_milestone_line(milestone_list_item))
 
 
 @milestone.command(name="reopen")

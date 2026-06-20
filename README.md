@@ -156,9 +156,12 @@ A type is required. A milestone is optional at creation time — an issue withou
 ```sh
 git clerk issue start 1
 # On branch 'feat/auth', active issue is #1.
+#
+# ## Description
+# Login form with magic link.
 ```
 
-Creates the branch from the milestone's scope (`feat/auth`), switches to it, and records the active issue in local git config. From here, the standard commit/PR/ship workflow applies.
+Creates the branch from the milestone's scope (`feat/auth`), switches to it, records the active issue in local git config, and prints the issue body so you have the description and acceptance criteria in front of you as you begin. From here, the standard commit/PR/ship workflow applies.
 
 **PR body gets `Closes #N` automatically**
 
@@ -175,10 +178,11 @@ Clears the active issue after merging. If the milestone has no remaining open is
 **Other board commands**
 
 ```sh
+git clerk board                          # session snapshot: active work + current milestone
 git clerk milestone list                 # list open milestones with issue counts
 git clerk milestone reopen 1             # reopen a closed milestone
-git clerk issue list                     # list open issues (all milestones)
-git clerk issue list --milestone 1       # filter by milestone
+git clerk issue list                     # list open issues, grouped by milestone
+git clerk issue list --milestone 1       # filter to one milestone (flat list)
 git clerk issue discard 3                # close an issue as not planned
 ```
 
@@ -322,6 +326,21 @@ Re-attaches to CI checks for the current branch's PR. Useful when you want to ch
 git clerk watch
 ```
 
+### `board`
+
+Prints a session snapshot: the current branch and active issue, the milestone in focus with its open issues expanded, and the remaining open milestones as one-line counts. The focused milestone is the active issue's milestone, or the first open milestone when no issue is active.
+
+```sh
+git clerk board
+# feat/foundation — #4 Auth
+#
+# #1  Foundation — 3 issues open, 2 closed
+#   #3  chore  Full data model — schema and migrations
+#   #4  feat   Auth — magic link login, session, protected routes
+#
+# #2  Portfolio — 2 issues open
+```
+
 ### `milestone new TITLE [DESCRIPTION]`
 
 Creates a GitHub Milestone. The `--scope` option is required and determines the branch name prefix used by all issues in this milestone.
@@ -341,11 +360,16 @@ git clerk milestone new "Auth System" --scope auth -e    # opens $EDITOR
 
 ### `milestone list`
 
-Lists open milestones with their scope and open/closed issue counts.
+Lists open milestones with their open/closed issue counts, under a repo header.
 
 ```sh
 git clerk milestone list
+# renov milestones:
+# #1  Foundation — 3 issues open, 2 closed
+# #2  Portfolio — 2 issues open
 ```
+
+The closed count is omitted when nothing is closed.
 
 ### `milestone reopen NUMBER`
 
@@ -375,23 +399,37 @@ git clerk issue new "Add login form" --type feat --milestone 1 -e
 
 ### `issue list`
 
-Lists open issues. Filters to a specific milestone with `--milestone`.
+Lists open issues grouped by milestone. With `--milestone`, lists just that milestone's issues as a flat list.
 
 ```sh
 git clerk issue list
+# #1 Foundation
+#   #3  chore  Full data model — schema and migrations
+#   #4  feat   Auth — magic link login, session, protected routes
+#
+# #2 Portfolio
+#   #6  feat   Portfolio
+
 git clerk issue list --milestone 1
+# #3  chore  Full data model — schema and migrations
+# #4  feat   Auth — magic link login, session, protected routes
 ```
+
+Issues with no milestone are grouped last under `No milestone`.
 
 ### `issue start NUMBER`
 
-Starts work on an issue: creates the branch from the milestone's scope, switches to it, and records the active issue in local git config. Requires the issue to have a type label and be assigned to a milestone.
+Starts work on an issue: creates the branch from the milestone's scope, switches to it, records the active issue in local git config, and prints the issue body. Requires the issue to have a type label and be assigned to a milestone.
 
 ```sh
 git clerk issue start 1
 # On branch 'feat/auth', active issue is #1.
+#
+# ## Description
+# Login form with magic link.
 ```
 
-The recorded active issue is used by `pr` (to append `Closes #N`) and cleared by `ship` (after merging).
+The issue body is printed so the description and acceptance criteria are in front of you as you start. The recorded active issue is used by `pr` (to append `Closes #N`) and cleared by `ship` (after merging).
 
 ### `issue discard NUMBER`
 

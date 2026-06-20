@@ -19,6 +19,7 @@ class IssueInfo:
     title: str
     type: str
     milestone: MilestoneRef | None
+    body: str = ""
 
 
 def issue_create(
@@ -88,7 +89,7 @@ def issue_view(number: int) -> IssueInfo:
         "--repo",
         repo(),
         "--json",
-        "number,title,labels,milestone",
+        "number,title,labels,milestone,body",
         capture=True,
     )
     raw = json.loads(out)
@@ -105,6 +106,7 @@ def issue_view(number: int) -> IssueInfo:
         milestone=MilestoneRef(number=int(ms_raw["number"]), title=str(ms_raw["title"]))
         if ms_raw
         else None,
+        body=str(raw.get("body") or ""),
     )
 
 

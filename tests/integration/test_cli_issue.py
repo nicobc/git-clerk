@@ -10,6 +10,7 @@ from gitclerk.github.label import TYPE_COLORS
 FAKE_REPO = "test-owner/test-repo"
 MILESTONE_API = f"repos/{FAKE_REPO}/milestones"
 ISSUE_FIELDS = "number,title,labels,milestone"
+ISSUE_VIEW_FIELDS = "number,title,labels,milestone,body"
 
 
 @pytest.mark.usefixtures("git_repo_with_github_remote")
@@ -110,17 +111,65 @@ def test_creates_issue_with_milestone(runner: CliRunner, fp: FakeProcess) -> Non
 
 
 @pytest.mark.usefixtures("git_repo_with_github_remote")
-def test_lists_issues(runner: CliRunner, fp: FakeProcess) -> None:
+def test_lists_issues_grouped_by_milestone(runner: CliRunner, fp: FakeProcess) -> None:
     fp.register(  # pyright: ignore[reportUnknownMemberType]
         ["gh", "issue", "list", "--repo", FAKE_REPO, "--json", ISSUE_FIELDS, "--state", "open"],
         stdout=(
-            '[{"number": 1, "title": "Add login", "labels": [{"name": "type: feat"}],'
-            ' "milestone": {"number": 1, "title": "Auth System"}}]'
+            "["
+            '{"number": 4, "title": "Auth", "labels": [{"name": "type: feat"}],'
+            ' "milestone": {"number": 1, "title": "Foundation"}},'
+            '{"number": 3, "title": "Data model", "labels": [{"name": "type: chore"}],'
+            ' "milestone": {"number": 1, "title": "Foundation"}},'
+            '{"number": 6, "title": "Portfolio", "labels": [{"name": "type: feat"}],'
+            ' "milestone": {"number": 2, "title": "Portfolio"}},'
+            '{"number": 9, "title": "Backlog item", "labels": [{"name": "type: feat"}],'
+            ' "milestone": null}'
+            "]"
         ),
     )
     result = runner.invoke(main, ["issue", "list"])
     assert result.exit_code == 0, result.output
-    assert result.output == "#1 [feat] [milestone #1] Add login\n"
+    assert result.output == (
+        "#1 Foundation\n"
+        "  #3  chore  Data model\n"
+        "  #4  feat   Auth\n"
+        "\n"
+        "#2 Portfolio\n"
+        "  #6  feat   Portfolio\n"
+        "\n"
+        "No milestone\n"
+        "  #9  feat   Backlog item\n"
+    )
+
+
+@pytest.mark.usefixtures("git_repo_with_github_remote")
+def test_lists_issues_filtered_is_flat(runner: CliRunner, fp: FakeProcess) -> None:
+    fp.register(  # pyright: ignore[reportUnknownMemberType]
+        [
+            "gh",
+            "issue",
+            "list",
+            "--repo",
+            FAKE_REPO,
+            "--json",
+            ISSUE_FIELDS,
+            "--state",
+            "open",
+            "--milestone",
+            "1",
+        ],
+        stdout=(
+            "["
+            '{"number": 4, "title": "Auth", "labels": [{"name": "type: feat"}],'
+            ' "milestone": {"number": 1, "title": "Foundation"}},'
+            '{"number": 3, "title": "Data model", "labels": [{"name": "type: chore"}],'
+            ' "milestone": {"number": 1, "title": "Foundation"}}'
+            "]"
+        ),
+    )
+    result = runner.invoke(main, ["issue", "list", "--milestone", "1"])
+    assert result.exit_code == 0, result.output
+    assert result.output == "#3  chore  Data model\n#4  feat   Auth\n"
 
 
 @pytest.mark.usefixtures("git_repo_with_github_remote")
@@ -137,7 +186,8 @@ def test_lists_no_issues(runner: CliRunner, fp: FakeProcess) -> None:
 class TestIssueStart:
     ISSUE_JSON = (
         '{"number": 1, "title": "Add login", "labels": [{"name": "type: feat"}],'
-        ' "milestone": {"number": 1, "title": "Auth System"}}'
+        ' "milestone": {"number": 1, "title": "Auth System"},'
+        ' "body": "## Description\\nLogin form with magic link."}'
     )
     MILESTONE_JSON = (
         '{"number": 1, "title": "Auth System", "description": "scope: auth",'
@@ -147,7 +197,7 @@ class TestIssueStart:
     @pytest.fixture(autouse=True)
     def _setup(self, fp: FakeProcess) -> None:
         fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "issue", "view", "1", "--repo", FAKE_REPO, "--json", ISSUE_FIELDS],
+            ["gh", "issue", "view", "1", "--repo", FAKE_REPO, "--json", ISSUE_VIEW_FIELDS],
             stdout=self.ISSUE_JSON,
         )
         fp.register(  # pyright: ignore[reportUnknownMemberType]
@@ -159,17 +209,34 @@ class TestIssueStart:
     def test_creates_branch_and_records_active_issue(self, runner: CliRunner) -> None:
         result = runner.invoke(main, ["issue", "start", "1"])
         assert result.exit_code == 0, result.output
-        assert result.output == "On branch 'feat/auth', active issue is #1.\n"
+        assert result.output == (
+            "On branch 'feat/auth', active issue is #1.\n"
+            "\n"
+            "## Description\nLogin form with magic link.\n"
+        )
         assert current_branch() == "feat/auth"
         assert get_active_issue() == 1
 
     @pytest.mark.usefixtures("git_repo_with_github_remote")
+    def test_omits_body_block_when_empty(self, runner: CliRunner, fp: FakeProcess) -> None:
+        fp.register(  # pyright: ignore[reportUnknownMemberType]
+            ["gh", "issue", "view", "5", "--repo", FAKE_REPO, "--json", ISSUE_VIEW_FIELDS],
+            stdout=(
+                '{"number": 5, "title": "Terse", "labels": [{"name": "type: feat"}],'
+                ' "milestone": {"number": 1, "title": "Auth System"}, "body": ""}'
+            ),
+        )
+        result = runner.invoke(main, ["issue", "start", "5"])
+        assert result.exit_code == 0, result.output
+        assert result.output == "On branch 'feat/auth', active issue is #5.\n"
+
+    @pytest.mark.usefixtures("git_repo_with_github_remote")
     def test_fails_without_milestone(self, runner: CliRunner, fp: FakeProcess) -> None:
         fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "issue", "view", "2", "--repo", FAKE_REPO, "--json", ISSUE_FIELDS],
+            ["gh", "issue", "view", "2", "--repo", FAKE_REPO, "--json", ISSUE_VIEW_FIELDS],
             stdout=(
                 '{"number": 2, "title": "No milestone",'
-                ' "labels": [{"name": "type: feat"}], "milestone": null}'
+                ' "labels": [{"name": "type: feat"}], "milestone": null, "body": ""}'
             ),
         )
         result = runner.invoke(main, ["issue", "start", "2"])
@@ -181,11 +248,11 @@ class TestIssueStart:
     @pytest.mark.usefixtures("git_repo_with_github_remote")
     def test_fails_without_scope(self, runner: CliRunner, fp: FakeProcess) -> None:
         fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "issue", "view", "3", "--repo", FAKE_REPO, "--json", ISSUE_FIELDS],
+            ["gh", "issue", "view", "3", "--repo", FAKE_REPO, "--json", ISSUE_VIEW_FIELDS],
             stdout=(
                 '{"number": 3, "title": "No scope issue",'
                 ' "labels": [{"name": "type: feat"}],'
-                ' "milestone": {"number": 2, "title": "No Scope"}}'
+                ' "milestone": {"number": 2, "title": "No Scope"}, "body": ""}'
             ),
         )
         fp.register(  # pyright: ignore[reportUnknownMemberType]
@@ -204,11 +271,11 @@ class TestIssueStart:
     @pytest.mark.usefixtures("git_repo_with_github_remote")
     def test_fails_without_type_label(self, runner: CliRunner, fp: FakeProcess) -> None:
         fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "issue", "view", "4", "--repo", FAKE_REPO, "--json", ISSUE_FIELDS],
+            ["gh", "issue", "view", "4", "--repo", FAKE_REPO, "--json", ISSUE_VIEW_FIELDS],
             stdout=(
                 '{"number": 4, "title": "Unlabeled",'
                 ' "labels": [],'
-                ' "milestone": {"number": 1, "title": "Auth System"}}'
+                ' "milestone": {"number": 1, "title": "Auth System"}, "body": ""}'
             ),
         )
         result = runner.invoke(main, ["issue", "start", "4"])

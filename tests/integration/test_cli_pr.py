@@ -13,7 +13,7 @@ from gitclerk.git.config import get_active_issue, set_active_issue
 
 FAKE_REPO = "test-owner/test-repo"
 MILESTONE_API = f"repos/{FAKE_REPO}/milestones"
-ISSUE_FIELDS = "number,title,labels,milestone"
+ISSUE_FIELDS = "number,title,labels,milestone,body"
 PR_URL = f"https://github.com/{FAKE_REPO}/pull/1"
 
 
