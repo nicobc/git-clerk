@@ -332,7 +332,8 @@ Prints a session snapshot: the current branch and active issue, the milestone in
 
 ```sh
 git clerk board
-# feat/foundation — #4 Auth
+# Current branch: feat/foundation
+# Active issue: #4 Auth
 #
 # #1  Foundation — 3 issues open, 2 closed
 #   #3  chore  Full data model — schema and migrations

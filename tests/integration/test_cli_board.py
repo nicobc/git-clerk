@@ -74,7 +74,9 @@ def test_board_with_active_issue_focuses_its_milestone(runner: CliRunner, fp: Fa
     _register_foundation(fp)
     result = runner.invoke(main, ["board"])
     assert result.exit_code == 0, result.output
-    assert result.output == "feat/foundation — #4 Auth\n\n" + EXPANDED_FOUNDATION
+    assert result.output == (
+        "Current branch: feat/foundation\nActive issue: #4 Auth\n\n" + EXPANDED_FOUNDATION
+    )
 
 
 @pytest.mark.usefixtures("git_repo_with_github_remote")
@@ -84,7 +86,7 @@ def test_board_without_active_issue_focuses_first_milestone(
     _register_foundation(fp)
     result = runner.invoke(main, ["board"])
     assert result.exit_code == 0, result.output
-    assert result.output == "main\n\n" + EXPANDED_FOUNDATION
+    assert result.output == "Current branch: main\n\n" + EXPANDED_FOUNDATION
 
 
 @pytest.mark.usefixtures("git_repo_with_github_remote")
@@ -95,4 +97,4 @@ def test_board_no_milestones(runner: CliRunner, fp: FakeProcess) -> None:
     )
     result = runner.invoke(main, ["board"])
     assert result.exit_code == 0, result.output
-    assert result.output == "main\n\nNo open milestones.\n"
+    assert result.output == "Current branch: main\n\nNo open milestones.\n"

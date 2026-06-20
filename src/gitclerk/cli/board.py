@@ -12,16 +12,15 @@ from gitclerk.github.milestone import milestone_list
 def board() -> None:
     """Session snapshot: active work, current milestone, and backlog."""
     branch_name = current_branch()
+    click.echo(f"Current branch: {branch_name}")
     active_issue_number = get_active_issue()
     focus_milestone_number: int | None = None
     if active_issue_number is not None:
         active_issue = issue_view(active_issue_number)
-        click.echo(f"{branch_name} — #{active_issue_number} {active_issue.title}")
+        click.echo(f"Active issue: #{active_issue_number} {active_issue.title}")
         focus_milestone_number = (
             active_issue.milestone.number if active_issue.milestone is not None else None
         )
-    else:
-        click.echo(branch_name)
 
     milestones = milestone_list()
     if not milestones:
