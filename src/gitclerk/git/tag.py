@@ -35,18 +35,23 @@ def compute_next_calver(existing_tags: list[str], today: date) -> str:
     return f"{prefix}{last_counter + 1}"
 
 
-def compute_next_semver(existing_tags: list[str], bump: str) -> str:
+def latest_semver_tag(existing_tags: list[str]) -> str | None:
     semver_tags = sorted(
-        [
+        (
             tag
             for tag in existing_tags
             if _SEMVER_RE.fullmatch(tag) and not _CALVER_RE.fullmatch(tag)
-        ],
+        ),
         key=lambda tag: tuple(int(part) for part in tag[1:].split(".")),
     )
-    if not semver_tags:
+    return semver_tags[-1] if semver_tags else None
+
+
+def compute_next_semver(existing_tags: list[str], bump: str) -> str:
+    latest = latest_semver_tag(existing_tags)
+    if latest is None:
         return "v0.1.0"
-    major, minor, patch = (int(part) for part in semver_tags[-1][1:].split("."))
+    major, minor, patch = (int(part) for part in latest[1:].split("."))
     if bump == "major":
         return f"v{major + 1}.0.0"
     if bump == "minor":

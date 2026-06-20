@@ -9,6 +9,7 @@ from gitclerk.git.tag import (
     compute_next_calver,
     compute_next_semver,
     detect_scheme,
+    latest_semver_tag,
 )
 
 
@@ -60,3 +61,18 @@ def test_compute_next_calver(today: date, input_tags: list[str], expected: str) 
 )
 def test_compute_next_semver(input_tags: list[str], input_bump: str, expected: str) -> None:
     assert compute_next_semver(input_tags, input_bump) == expected
+
+
+@pytest.mark.parametrize(
+    "input_tags, expected",
+    [
+        ([], None),
+        (["v0.1.0"], "v0.1.0"),
+        (["v0.1.0", "v0.1.5", "v0.2.0"], "v0.2.0"),
+        (["v0.2.0", "v0.10.0"], "v0.10.0"),
+        (["v2026.06.1", "v1.0.0"], "v1.0.0"),
+    ],
+    ids=["none", "one", "picks_highest", "numeric_order", "ignores_calver"],
+)
+def test_latest_semver_tag(input_tags: list[str], expected: str | None) -> None:
+    assert latest_semver_tag(input_tags) == expected
