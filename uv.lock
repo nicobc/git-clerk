@@ -36,7 +36,7 @@ wheels = [
 ]
 
 [[package]]
-name = "git-clerk"
+name = "git-acta"
 version = "0.9.0"
 source = { editable = "." }
 dependencies = [

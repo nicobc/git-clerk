@@ -3,7 +3,7 @@ import sys
 
 import click
 
-from gitclerk.git.branch import TYPES
+from acta.git.branch import TYPES
 
 
 class CLIGroup(click.Group):

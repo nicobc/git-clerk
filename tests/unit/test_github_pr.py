@@ -1,6 +1,6 @@
 import pytest
 
-from gitclerk.github.pr import ChecksState, classify_rollup
+from acta.github.pr import ChecksState, classify_rollup
 
 
 def _check_run(status: str, conclusion: str | None = None) -> dict[str, object]:

@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 
-from gitclerk.github import get_repo, gh
+from acta.github import get_repo, gh
 
 _SCOPE_PREFIX = "scope: "
 

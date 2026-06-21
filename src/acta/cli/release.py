@@ -2,7 +2,7 @@ from datetime import date
 
 import click
 
-from gitclerk.git.tag import (
+from acta.git.tag import (
     CALVER,
     SEMVER,
     Scheme,

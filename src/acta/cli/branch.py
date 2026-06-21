@@ -1,7 +1,7 @@
 import click
 
-from gitclerk.git.branch import fetch_origin, switch_new_branch
-from gitclerk.git.branch import parse as parse_branch
+from acta.git.branch import fetch_origin, switch_new_branch
+from acta.git.branch import parse as parse_branch
 
 
 @click.command()

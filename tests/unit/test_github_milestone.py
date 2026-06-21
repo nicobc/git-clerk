@@ -1,6 +1,6 @@
 import pytest
 
-from gitclerk.github.milestone import parse_description
+from acta.github.milestone import parse_description
 
 
 @pytest.mark.parametrize(

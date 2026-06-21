@@ -1,8 +1,8 @@
 import click
 
-from gitclerk.cli.shared import CLIGroup, open_editor
-from gitclerk.github import get_repo
-from gitclerk.github.milestone import (
+from acta.cli.shared import CLIGroup, open_editor
+from acta.github import get_repo
+from acta.github.milestone import (
     MilestoneListItem,
     milestone_create,
     milestone_list,

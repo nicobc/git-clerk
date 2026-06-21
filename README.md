@@ -1,26 +1,26 @@
-# git-clerk
+# git-acta
 
-[![PyPI version](https://img.shields.io/pypi/v/git-clerk)](https://pypi.org/project/git-clerk/)
-[![Python versions](https://img.shields.io/pypi/pyversions/git-clerk)](https://pypi.org/project/git-clerk/)
+[![PyPI version](https://img.shields.io/pypi/v/git-acta)](https://pypi.org/project/git-acta/)
+[![Python versions](https://img.shields.io/pypi/pyversions/git-acta)](https://pypi.org/project/git-acta/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://github.com/nicobc/git-clerk/actions/workflows/test.yml/badge.svg)](https://github.com/nicobc/git-clerk/actions/workflows/test.yml)
+[![CI](https://github.com/nicobc/git-acta/actions/workflows/test.yml/badge.svg)](https://github.com/nicobc/git-acta/actions/workflows/test.yml)
 
 A structured git workflow CLI for [conventional commits](https://www.conventionalcommits.org/), trunk-based branching, and a clean GitHub PR lifecycle — all from the command line.
 
 ## Philosophy
 
-git-clerk is built on three practices that reinforce each other: [trunk-based development](https://trunkbaseddevelopment.com/), [conventional commits](https://www.conventionalcommits.org/), and squash-merge-only history. Short-lived branches stay close to `main`. Squash merges keep `main`'s history linear and readable — one commit per feature. Conventional commit types make that history meaningful at a glance. git-clerk connects all three as a unit: you name your branch `feat/user-auth` once, and every commit message, PR title, and release tag follows from that single decision.
+git-acta is built on three practices that reinforce each other: [trunk-based development](https://trunkbaseddevelopment.com/), [conventional commits](https://www.conventionalcommits.org/), and squash-merge-only history. Short-lived branches stay close to `main`. Squash merges keep `main`'s history linear and readable — one commit per feature. Conventional commit types make that history meaningful at a glance. git-acta connects all three as a unit: you name your branch `feat/user-auth` once, and every commit message, PR title, and release tag follows from that single decision.
 
 ## Opinions
 
-git-clerk is intentionally opinionated. These constraints are not configurable:
+git-acta is intentionally opinionated. These constraints are not configurable:
 
 - **GitHub only** — PR and release operations rely on `gh`. GitLab and Bitbucket are not supported.
 - **Squash merges** — `ship` always squash-merges to keep `main`'s history linear.
 - **Single trunk** — `main` is the only integration branch. `develop`, `release/*`, and similar long-lived branches are out of scope. The trunk name is not configurable — repositories using a different default branch are not supported.
 - **Conventional commits** — branch names must follow `type/scope` using one of the [11 standard types](https://www.conventionalcommits.org).
 
-If your workflow diverges from any of these, git-clerk is not the right tool.
+If your workflow diverges from any of these, git-acta is not the right tool.
 
 ## Prerequisites
 
@@ -32,27 +32,21 @@ If your workflow diverges from any of these, git-clerk is not the right tool.
 
 **Repository configuration**
 
-git-clerk assumes the repository is configured to match its workflow. Without this, the tool still works but its guarantees don't hold — anyone can bypass conventions by using `git` and `gh` directly.
+git-acta assumes the repository is configured to match its workflow. Without this, the tool still works but its guarantees don't hold — anyone can bypass conventions by using `git` and `gh` directly.
 
 Ask your infra or platform team to configure:
 
 - **Squash merges only** — disable merge commits and rebase merges so `main` stays linear
 - **Branch protection on `main`** — require pull requests before merging; disallow direct pushes
-- **Required status checks** — require CI to pass before a PR can be merged; this makes `git clerk ship`'s CI gate structural rather than advisory
+- **Required status checks** — require CI to pass before a PR can be merged; this makes `acta ship`'s CI gate structural rather than advisory
 
 ## Installation
 
 ```sh
-uv tool install git-clerk
+uv tool install git-acta
 ```
 
-To use it as `git clerk` (recommended) rather than `git-clerk`, register a git alias:
-
-```sh
-git config --global alias.clerk '!git-clerk'
-```
-
-After this, `git clerk` prints help and `git clerk commit --help` (any subcommand) works as expected. Note that `git clerk --help` will not work — git intercepts `--help` before running the alias and tries to open a man page. Use `git clerk` or `git-clerk --help` for top-level help instead.
+This installs the `acta` command. All commands below are invoked as `acta <subcommand>`.
 
 ## Workflow walkthrough
 
@@ -61,7 +55,7 @@ Here is a complete cycle from starting a feature to tagging a release.
 **1. Create a branch**
 
 ```sh
-git clerk branch feat/user-auth
+acta branch feat/user-auth
 ```
 
 Fetches the latest `origin/main` and creates `feat/user-auth` from it. The branch name is the only thing you decide upfront — type and scope flow into every subsequent command automatically.
@@ -69,7 +63,7 @@ Fetches the latest `origin/main` and creates `feat/user-auth` from it. The branc
 **2. Do your work, then commit**
 
 ```sh
-git clerk commit -A "add login form"
+acta commit -A "add login form"
 ```
 
 Stages all changes and commits with the message `feat(user-auth): add login form`. The type and scope come from the branch name — you only write the description.
@@ -77,10 +71,10 @@ Stages all changes and commits with the message `feat(user-auth): add login form
 For commits that need more context, pass the body as a second argument or open your editor with `-e`:
 
 ```sh
-git clerk commit -A "add login form" "Supports email and SSO providers."
+acta commit -A "add login form" "Supports email and SSO providers."
 # → commits with inline body (useful in scripts and LLM workflows)
 
-git clerk commit -A -e "add login form"
+acta commit -A -e "add login form"
 # → opens $EDITOR for the body, then commits
 ```
 
@@ -89,7 +83,7 @@ You can commit as many times as you want. Only the squash commit that lands on `
 **3. Open a PR**
 
 ```sh
-git clerk pr "Add login form"
+acta pr "Add login form"
 ```
 
 Pushes the branch with upstream tracking set, creates the PR against `main`, prints the URL, then watches CI checks until they complete. You can share the URL while CI is still running.
@@ -97,10 +91,10 @@ Pushes the branch with upstream tracking set, creates the PR against `main`, pri
 By default no body is added. To add one:
 
 ```sh
-git clerk pr "Add login form" "Adds email/password and SSO login. Closes #42."
+acta pr "Add login form" "Adds email/password and SSO login. Closes #42."
 # inline body
 
-git clerk pr -e "Add login form"
+acta pr -e "Add login form"
 # opens $EDITOR for the body
 ```
 
@@ -109,7 +103,7 @@ git clerk pr -e "Add login form"
 Once CI is green:
 
 ```sh
-git clerk ship
+acta ship
 ```
 
 Shows you the PR title and number, asks for confirmation, then: squash-merges into `main`, deletes the remote branch, switches to local `main`, pulls, and force-deletes the local branch. You end up on a clean, up-to-date `main` in one step.
@@ -117,7 +111,7 @@ Shows you the PR title and number, asks for confirmation, then: squash-merges in
 **5. Tag a release**
 
 ```sh
-git clerk release
+acta release
 ```
 
 Detects your versioning scheme from existing tags, computes the next version, shows you the tag, and asks for confirmation before pushing. On a fresh repo with no tags, it prompts you to choose CalVer or SemVer.
@@ -129,13 +123,13 @@ The board commands add a lightweight project layer on top of the core workflow u
 **Create a milestone**
 
 ```sh
-git clerk milestone new "Auth System" --scope auth
+acta milestone new "Auth System" --scope auth
 # Milestone #1 created.
 
-git clerk milestone new "Auth System" "Handles login, registration, and SSO." --scope auth
+acta milestone new "Auth System" "Handles login, registration, and SSO." --scope auth
 # → with inline description
 
-git clerk milestone new "Auth System" --scope auth -e
+acta milestone new "Auth System" --scope auth -e
 # → opens $EDITOR for the description
 ```
 
@@ -144,9 +138,9 @@ The `--scope` is used to derive branch names for all issues in this milestone. E
 **Create issues**
 
 ```sh
-git clerk issue new "Add login form" --type feat --milestone 1
-git clerk issue new "Fix token expiry" --type fix --milestone 1
-git clerk issue new "Write auth docs" --type docs --milestone 1
+acta issue new "Add login form" --type feat --milestone 1
+acta issue new "Fix token expiry" --type fix --milestone 1
+acta issue new "Write auth docs" --type docs --milestone 1
 ```
 
 A type is required. A milestone is optional at creation time — an issue without one sits in the backlog. Both are required before `issue start` can be used.
@@ -154,7 +148,7 @@ A type is required. A milestone is optional at creation time — an issue withou
 **Start an issue**
 
 ```sh
-git clerk issue start 1
+acta issue start 1
 # On branch 'feat/auth', active issue is #1.
 #
 # ## Description
@@ -165,25 +159,25 @@ Creates the branch from the milestone's scope (`feat/auth`), switches to it, rec
 
 **PR body gets `Closes #N` automatically**
 
-Because `issue start` recorded the active issue, `git clerk pr` appends `Closes #1` to the PR body without any extra flags. The issue is closed on GitHub when the PR is squash-merged.
+Because `issue start` recorded the active issue, `acta pr` appends `Closes #1` to the PR body without any extra flags. The issue is closed on GitHub when the PR is squash-merged.
 
 **Ship closes the milestone when all issues are done**
 
 ```sh
-git clerk ship
+acta ship
 ```
 
-Clears the active issue after merging. If the milestone has no remaining open issues, git-clerk closes it automatically and prints a confirmation.
+Clears the active issue after merging. If the milestone has no remaining open issues, git-acta closes it automatically and prints a confirmation.
 
 **Other board commands**
 
 ```sh
-git clerk board                          # session snapshot: active work + current milestone
-git clerk milestone list                 # list open milestones with issue counts
-git clerk milestone reopen 1             # reopen a closed milestone
-git clerk issue list                     # list open issues, grouped by milestone
-git clerk issue list --milestone 1       # filter to one milestone (flat list)
-git clerk issue discard 3                # close an issue as not planned
+acta board                          # session snapshot: active work + current milestone
+acta milestone list                 # list open milestones with issue counts
+acta milestone reopen 1             # reopen a closed milestone
+acta issue list                     # list open issues, grouped by milestone
+acta issue list --milestone 1       # filter to one milestone (flat list)
+acta issue discard 3                # close an issue as not planned
 ```
 
 ## Commands
@@ -193,9 +187,9 @@ git clerk issue discard 3                # close an issue as not planned
 Fetches the latest `origin/main` and creates a new branch from it.
 
 ```sh
-git clerk branch feat/user-auth     # → feat/user-auth
-git clerk branch fix/payment-api    # → fix/payment-api
-git clerk branch chore/deps         # → chore/deps
+acta branch feat/user-auth     # → feat/user-auth
+acta branch fix/payment-api    # → fix/payment-api
+acta branch chore/deps         # → chore/deps
 ```
 
 The branch name is the only decision you make upfront. Every subsequent `commit` and `pr` command reads the type and scope from it — you never repeat yourself.
@@ -207,7 +201,7 @@ The fetch happens before branch creation, so you always start from the latest `m
 Creates a conventional commit by reading the type and scope from the current branch name. The commit message header is always `type(scope): description` — you only supply the description.
 
 ```sh
-git clerk commit "add login form"
+acta commit "add login form"
 # → feat(user-auth): add login form
 ```
 
@@ -218,11 +212,11 @@ By default there is no body — most commits don't need one. There are two ways 
 ```sh
 # Inline — pass the body as a second positional argument.
 # Useful in scripts and LLM-driven workflows.
-git clerk commit "add login form" "Supports email and SSO providers."
+acta commit "add login form" "Supports email and SSO providers."
 
 # Interactive — open $EDITOR. Save and exit to use the body; quit without
 # saving to abort.
-git clerk commit -e "add login form"
+acta commit -e "add login form"
 ```
 
 An empty string passed as BODY is treated the same as no body — only a non-empty string is included in the commit.
@@ -240,8 +234,8 @@ An empty string passed as BODY is treated the same as no body — only a non-emp
 The `-t` and `-s` overrides are for cases where the commit type or scope differs from the branch — for example, bumping a lockfile on a `feat` branch:
 
 ```sh
-git clerk commit -t chore "update lockfile"    # chore(user-auth): update lockfile
-git clerk commit -s auth-core "fix token TTL"  # feat(auth-core): fix token TTL
+acta commit -t chore "update lockfile"    # chore(user-auth): update lockfile
+acta commit -s auth-core "fix token TTL"  # feat(auth-core): fix token TTL
 ```
 
 `-P` pushes after committing, handy for follow-up commits once a PR is already open. It prints a reminder to refresh the PR description, since new commits may change the PR's scope.
@@ -259,11 +253,11 @@ By default no body is added. There are two ways to add one:
 ```sh
 # Inline — pass the body as a second positional argument.
 # Useful in scripts and LLM-driven workflows.
-git clerk pr "Add login form" "Adds email/password and SSO login. Closes #42."
+acta pr "Add login form" "Adds email/password and SSO login. Closes #42."
 
 # Interactive — open $EDITOR. Save and exit to use the body;
 # quit without saving to abort.
-git clerk pr -e "Add login form"
+acta pr -e "Add login form"
 ```
 
 An empty string passed as BODY is treated the same as no body.
@@ -286,7 +280,7 @@ If `issue start` was used to begin work on the current branch, `pr` automaticall
 Squash-merges the current branch's PR and brings your local environment back to a clean state on `main`. Must be run from the feature branch, not from `main`.
 
 ```sh
-git clerk ship
+acta ship
 ```
 
 Displays the PR title and number, asks for confirmation, then executes in order:
@@ -312,14 +306,14 @@ If the branch was started with `issue start`, `ship` also clears the active issu
 
 ```sh
 # Shipping fix/tech-debt while feat/user-auth is parked
-git clerk ship -u feat/user-auth
+acta ship -u feat/user-auth
 # → ships fix/tech-debt, then switches to feat/user-auth and merges origin/main
 ```
 
 `-y` is useful in automated contexts where you want to ship without interactive confirmation:
 
 ```sh
-git clerk ship -y
+acta ship -y
 ```
 
 ### `watch`
@@ -327,7 +321,7 @@ git clerk ship -y
 Re-attaches to CI checks for the current branch's PR. Useful when you want to check in on CI after navigating away from the terminal during a `pr` run.
 
 ```sh
-git clerk watch
+acta watch
 ```
 
 ### `board`
@@ -335,7 +329,7 @@ git clerk watch
 Prints a session snapshot: the current branch and active issue, the milestone in focus with its open issues expanded, and the remaining open milestones as one-line counts. The focused milestone is the active issue's milestone, or the first open milestone when no issue is active.
 
 ```sh
-git clerk board
+acta board
 # Current branch: feat/foundation
 # Active issue: #4 Auth
 #
@@ -351,9 +345,9 @@ git clerk board
 Creates a GitHub Milestone. The `--scope` option is required and determines the branch name prefix used by all issues in this milestone.
 
 ```sh
-git clerk milestone new "Auth System" --scope auth
-git clerk milestone new "Auth System" "Handles login and SSO." --scope auth
-git clerk milestone new "Auth System" --scope auth -e    # opens $EDITOR
+acta milestone new "Auth System" --scope auth
+acta milestone new "Auth System" "Handles login and SSO." --scope auth
+acta milestone new "Auth System" --scope auth -e    # opens $EDITOR
 ```
 
 **Options**
@@ -368,7 +362,7 @@ git clerk milestone new "Auth System" --scope auth -e    # opens $EDITOR
 Lists open milestones with their open/closed issue counts, under a repo header.
 
 ```sh
-git clerk milestone list
+acta milestone list
 # renov milestones:
 # #1  Foundation — 3 issues open, 2 closed
 # #2  Portfolio — 2 issues open
@@ -381,7 +375,7 @@ The closed count is omitted when nothing is closed.
 Reopens a closed milestone.
 
 ```sh
-git clerk milestone reopen 1
+acta milestone reopen 1
 ```
 
 ### `issue new TITLE [BODY]`
@@ -389,9 +383,9 @@ git clerk milestone reopen 1
 Creates a GitHub Issue. `--type` is required. `--milestone` is optional — an issue without one sits in the backlog. Both are required before `issue start` can be used. Type labels are created in the repository automatically on first use.
 
 ```sh
-git clerk issue new "Add login form" --type feat
-git clerk issue new "Add login form" --type feat --milestone 1
-git clerk issue new "Add login form" --type feat --milestone 1 -e
+acta issue new "Add login form" --type feat
+acta issue new "Add login form" --type feat --milestone 1
+acta issue new "Add login form" --type feat --milestone 1 -e
 ```
 
 **Options**
@@ -407,7 +401,7 @@ git clerk issue new "Add login form" --type feat --milestone 1 -e
 Lists open issues grouped by milestone. With `--milestone`, lists just that milestone's issues as a flat list.
 
 ```sh
-git clerk issue list
+acta issue list
 # #1 Foundation
 #   #3  chore  Full data model — schema and migrations
 #   #4  feat   Auth — magic link login, session, protected routes
@@ -415,7 +409,7 @@ git clerk issue list
 # #2 Portfolio
 #   #6  feat   Portfolio
 
-git clerk issue list --milestone 1
+acta issue list --milestone 1
 # #3  chore  Full data model — schema and migrations
 # #4  feat   Auth — magic link login, session, protected routes
 ```
@@ -427,7 +421,7 @@ Issues with no milestone are grouped last under `No milestone`.
 Starts work on an issue: creates the branch from the milestone's scope, switches to it, records the active issue in local git config, and prints the issue body. Requires the issue to have a type label and be assigned to a milestone.
 
 ```sh
-git clerk issue start 1
+acta issue start 1
 # On branch 'feat/auth', active issue is #1.
 #
 # ## Description
@@ -441,7 +435,7 @@ The issue body is printed so the description and acceptance criteria are in fron
 Closes an issue as "not planned".
 
 ```sh
-git clerk issue discard 3
+acta issue discard 3
 ```
 
 ### `release`
@@ -451,15 +445,15 @@ Tags the current tip of `origin/main` and pushes the tag. It fetches the latest 
 For SemVer the bump is derived from the conventional-commit subjects since the last tag: a `feat` bumps minor, anything else bumps patch, and once the project is stable (1.0+) a `!` breaking change bumps major. While still 0.x a breaking change is capped at minor, since a pre-1.0 breaking change must not force `v1.0.0`. There is no `--bump`: the commits decide.
 
 ```sh
-git clerk release             # derive and tag the next version (auto-detects scheme)
-git clerk release --semver    # force SemVer (only needed for the very first tag)
-git clerk release --calver    # use calendar versioning instead
-git clerk release --stable    # one-time promotion of a 0.x project to v1.0.0
+acta release             # derive and tag the next version (auto-detects scheme)
+acta release --semver    # force SemVer (only needed for the very first tag)
+acta release --calver    # use calendar versioning instead
+acta release --stable    # one-time promotion of a 0.x project to v1.0.0
 ```
 
 **Going stable.** `v1.0.0` is the one version the commits cannot derive: the 0.x cap stops at minor, because declaring stability is a deliberate decision. Pass `--stable` once to make that jump. After 1.0, breaking changes drive majors automatically, so there is no further override.
 
-**Scheme detection.** If the repository already has version tags, git-clerk detects the scheme automatically, so `--calver` and `--semver` are not needed. If no tags exist yet, it prompts you to choose. If both CalVer and SemVer tags are found, it exits with an error; pass `--calver` or `--semver` explicitly to proceed.
+**Scheme detection.** If the repository already has version tags, git-acta detects the scheme automatically, so `--calver` and `--semver` are not needed. If no tags exist yet, it prompts you to choose. If both CalVer and SemVer tags are found, it exits with an error; pass `--calver` or `--semver` explicitly to proceed.
 
 **Options**
 

@@ -2,8 +2,8 @@ import json
 import time
 from enum import Enum
 
-from gitclerk.git.branch import get_current_branch
-from gitclerk.github import get_repo, gh
+from acta.git.branch import get_current_branch
+from acta.github import get_repo, gh
 
 _CHECKS_POLL_INTERVAL = 5  # seconds
 _CHECKS_QUEUE_TIMEOUT = 90  # seconds to wait for checks to appear

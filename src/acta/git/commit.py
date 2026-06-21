@@ -1,4 +1,4 @@
-from gitclerk.git import git
+from acta.git import git
 
 
 def add_all() -> None:

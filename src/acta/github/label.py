@@ -1,5 +1,5 @@
-from gitclerk.git.branch import TYPES
-from gitclerk.github import get_repo, gh
+from acta.git.branch import TYPES
+from acta.github import get_repo, gh
 
 TYPE_COLORS: dict[str, str] = {
     "build": "0075ca",

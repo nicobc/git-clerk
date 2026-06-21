@@ -1,6 +1,6 @@
 import subprocess
 
-from gitclerk.git import git
+from acta.git import git
 
 
 def get_active_issue() -> int | None:

@@ -2,7 +2,7 @@ import functools
 import subprocess
 from urllib.parse import urlparse
 
-from gitclerk.git import get_remote_url
+from acta.git import get_remote_url
 
 
 def parse_repo_from_url(url: str) -> str:

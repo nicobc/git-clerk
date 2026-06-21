@@ -6,7 +6,7 @@ import pytest
 from click.testing import CliRunner
 from pytest_subprocess import FakeProcess
 
-from gitclerk import github
+from acta import github
 
 FAKE_REPO = "test-owner/test-repo"
 FAKE_REMOTE_URL = f"https://github.com/{FAKE_REPO}.git"
@@ -41,7 +41,7 @@ def git_repo(tmp_path: Path, bare_remote: Path, monkeypatch: pytest.MonkeyPatch)
 
 @pytest.fixture
 def git_repo_with_github_remote(git_repo: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """git_repo where gitclerk.github sees a fake GitHub URL for the origin remote.
+    """git_repo where acta.github sees a fake GitHub URL for the origin remote.
 
     All real git operations (fetch, push) still target the local bare repo.
     Only get_remote_url() — the one call that feeds into gh commands — is patched.
@@ -50,7 +50,7 @@ def git_repo_with_github_remote(git_repo: Path, monkeypatch: pytest.MonkeyPatch)
     def stub_remote_url(remote_name: str) -> str:
         return FAKE_REMOTE_URL
 
-    monkeypatch.setattr("gitclerk.github.get_remote_url", stub_remote_url)
+    monkeypatch.setattr("acta.github.get_remote_url", stub_remote_url)
     return git_repo
 
 

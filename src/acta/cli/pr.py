@@ -1,7 +1,7 @@
 import click
 
-from gitclerk.cli.shared import TYPE_CHOICE, open_editor
-from gitclerk.git.branch import (
+from acta.cli.shared import TYPE_CHOICE, open_editor
+from acta.git.branch import (
     delete_branch,
     get_current_branch,
     merge_origin_main,
@@ -9,12 +9,12 @@ from gitclerk.git.branch import (
     switch_branch,
     switch_main,
 )
-from gitclerk.git.branch import parse as parse_branch
-from gitclerk.git.commit import push_head
-from gitclerk.git.config import clear_active_issue, get_active_issue
-from gitclerk.github.issue import issue_view
-from gitclerk.github.milestone import milestone_close, milestone_view
-from gitclerk.github.pr import pr_checks_pass, pr_checks_watch, pr_create, pr_merge, pr_view
+from acta.git.branch import parse as parse_branch
+from acta.git.commit import push_head
+from acta.git.config import clear_active_issue, get_active_issue
+from acta.github.issue import issue_view
+from acta.github.milestone import milestone_close, milestone_view
+from acta.github.pr import pr_checks_pass, pr_checks_watch, pr_create, pr_merge, pr_view
 
 
 @click.command()
@@ -94,7 +94,7 @@ def ship(update_branch: str | None, confirmed: bool) -> None:
     """
     branch_name = get_current_branch()
     if branch_name == "main":
-        raise click.ClickException("run 'git clerk ship' from the feature branch, not main")
+        raise click.ClickException("run 'acta ship' from the feature branch, not main")
     pr_number, title = pr_view()
     prompt = f'Ship "{title}" (#{pr_number})'
     if update_branch:
@@ -103,7 +103,7 @@ def ship(update_branch: str | None, confirmed: bool) -> None:
         click.confirm(prompt, abort=True)
     if not pr_checks_pass(pr_number):
         raise click.ClickException(
-            f"PR #{pr_number} has failing or pending checks — run 'git clerk watch' to monitor"
+            f"PR #{pr_number} has failing or pending checks — run 'acta watch' to monitor"
         )
     active_issue_number = get_active_issue()
     milestone_number: int | None = None
