@@ -1,6 +1,6 @@
 import pytest
 
-from gitclerk.cli.shared import strip_comments
+from acta.cli.shared import strip_comments
 
 
 @pytest.mark.parametrize(

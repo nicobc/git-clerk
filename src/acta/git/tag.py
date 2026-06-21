@@ -2,8 +2,8 @@ import re
 from datetime import date
 from typing import Final, Literal, TypeAlias
 
-from gitclerk.git import git
-from gitclerk.git.commit import commit_subjects
+from acta.git import git
+from acta.git.commit import commit_subjects
 
 CALVER: Final = "CalVer"
 SEMVER: Final = "SemVer"
@@ -113,7 +113,7 @@ def list_tags(pattern: str = "v*") -> list[str]:
 def create_tag(tag: str, ref: str = "origin/main") -> None:
     if tag in list_tags():
         raise RuntimeError(
-            f"tag '{tag}' already exists — re-run 'git clerk release' to get the next version"
+            f"tag '{tag}' already exists — re-run 'acta release' to get the next version"
         )
     git("tag", tag, ref, quiet=True)
     git("push", "origin", tag, quiet=True)

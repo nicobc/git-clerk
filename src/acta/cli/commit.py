@@ -1,10 +1,10 @@
 import click
 
-from gitclerk.cli.shared import TYPE_CHOICE, open_editor
-from gitclerk.git.branch import get_current_branch
-from gitclerk.git.branch import parse as parse_branch
-from gitclerk.git.commit import add_all, push_head
-from gitclerk.git.commit import commit as git_commit
+from acta.cli.shared import TYPE_CHOICE, open_editor
+from acta.git.branch import get_current_branch
+from acta.git.branch import parse as parse_branch
+from acta.git.commit import add_all, push_head
+from acta.git.commit import commit as git_commit
 
 
 @click.command()

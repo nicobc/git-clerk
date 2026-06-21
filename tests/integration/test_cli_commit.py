@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from gitclerk.cli import main
-from gitclerk.git.branch import switch_new_branch
+from acta.cli import main
+from acta.git.branch import switch_new_branch
 
 
 def _commit_subject() -> str:

@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from gitclerk.cli import main
-from gitclerk.git.tag import list_tags
+from acta.cli import main
+from acta.git.tag import list_tags
 
 
 def _commit_and_push(git_repo: Path, subject: str) -> None:

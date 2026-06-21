@@ -1,8 +1,8 @@
 import pytest
 from click.testing import CliRunner
 
-from gitclerk.cli import main
-from gitclerk.git.branch import get_current_branch, switch_main, switch_new_branch
+from acta.cli import main
+from acta.git.branch import get_current_branch, switch_main, switch_new_branch
 
 
 @pytest.mark.usefixtures("git_repo")

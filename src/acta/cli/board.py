@@ -1,11 +1,11 @@
 import click
 
-from gitclerk.cli.issue import format_issue_lines
-from gitclerk.cli.milestone import format_milestone_line
-from gitclerk.git.branch import get_current_branch
-from gitclerk.git.config import get_active_issue
-from gitclerk.github.issue import issue_list, issue_view
-from gitclerk.github.milestone import milestone_list
+from acta.cli.issue import format_issue_lines
+from acta.cli.milestone import format_milestone_line
+from acta.git.branch import get_current_branch
+from acta.git.config import get_active_issue
+from acta.github.issue import issue_list, issue_view
+from acta.github.milestone import milestone_list
 
 
 @click.command()

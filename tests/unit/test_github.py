@@ -1,6 +1,6 @@
 import pytest
 
-from gitclerk.github import parse_repo_from_url
+from acta.github import parse_repo_from_url
 
 
 @pytest.mark.parametrize(

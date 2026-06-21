@@ -2,7 +2,7 @@ import pytest
 from click.testing import CliRunner
 from pytest_subprocess import FakeProcess
 
-from gitclerk.cli import main
+from acta.cli import main
 
 FAKE_REPO = "test-owner/test-repo"
 MILESTONE_API = f"repos/{FAKE_REPO}/milestones"

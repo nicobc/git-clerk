@@ -2,10 +2,10 @@ import pytest
 from click.testing import CliRunner
 from pytest_subprocess import FakeProcess
 
-from gitclerk.cli import main
-from gitclerk.git.branch import TYPES, get_current_branch
-from gitclerk.git.config import get_active_issue
-from gitclerk.github.label import TYPE_COLORS
+from acta.cli import main
+from acta.git.branch import TYPES, get_current_branch
+from acta.git.config import get_active_issue
+from acta.github.label import TYPE_COLORS
 
 FAKE_REPO = "test-owner/test-repo"
 MILESTONE_API = f"repos/{FAKE_REPO}/milestones"

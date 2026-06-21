@@ -5,11 +5,11 @@ import pytest
 from click.testing import CliRunner
 from pytest_subprocess import FakeProcess
 
-from gitclerk.cli import main
-from gitclerk.git.branch import branch_exists, get_current_branch, switch_main, switch_new_branch
-from gitclerk.git.commit import add_all
-from gitclerk.git.commit import commit as git_commit
-from gitclerk.git.config import get_active_issue, set_active_issue
+from acta.cli import main
+from acta.git.branch import branch_exists, get_current_branch, switch_main, switch_new_branch
+from acta.git.commit import add_all
+from acta.git.commit import commit as git_commit
+from acta.git.config import get_active_issue, set_active_issue
 
 FAKE_REPO = "test-owner/test-repo"
 MILESTONE_API = f"repos/{FAKE_REPO}/milestones"
@@ -236,13 +236,13 @@ class TestWatch:
 
     @pytest.fixture
     def _instant_sleep(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr("gitclerk.github.pr.time.sleep", _noop_sleep)
+        monkeypatch.setattr("acta.github.pr.time.sleep", _noop_sleep)
 
     @pytest.fixture
     def _short_queue(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr("gitclerk.github.pr._CHECKS_QUEUE_TIMEOUT", 1)
-        monkeypatch.setattr("gitclerk.github.pr._CHECKS_POLL_INTERVAL", 1)
-        monkeypatch.setattr("gitclerk.github.pr.time.sleep", _noop_sleep)
+        monkeypatch.setattr("acta.github.pr._CHECKS_QUEUE_TIMEOUT", 1)
+        monkeypatch.setattr("acta.github.pr._CHECKS_POLL_INTERVAL", 1)
+        monkeypatch.setattr("acta.github.pr.time.sleep", _noop_sleep)
 
     def test_watches_once_checks_are_present(self, runner: CliRunner, fp: FakeProcess) -> None:
         fp.register(ROLLUP_CMD, stdout=ROLLUP_PASS)  # pyright: ignore[reportUnknownMemberType]

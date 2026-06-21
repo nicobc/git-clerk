@@ -1,16 +1,16 @@
 import click
 
-from gitclerk.cli.shared import TYPE_CHOICE, CLIGroup, open_editor
-from gitclerk.git.branch import fetch_origin, switch_new_branch
-from gitclerk.git.config import set_active_issue
-from gitclerk.github.issue import (
+from acta.cli.shared import TYPE_CHOICE, CLIGroup, open_editor
+from acta.git.branch import fetch_origin, switch_new_branch
+from acta.git.config import set_active_issue
+from acta.github.issue import (
     IssueInfo,
     issue_close_not_planned,
     issue_create,
     issue_list,
     issue_view,
 )
-from gitclerk.github.milestone import milestone_view
+from acta.github.milestone import milestone_view
 
 
 def compute_issue_column_widths(issues: list[IssueInfo]) -> tuple[int, int]:

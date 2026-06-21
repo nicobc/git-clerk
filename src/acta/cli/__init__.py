@@ -1,17 +1,17 @@
 import click
 
-from gitclerk.cli.board import board
-from gitclerk.cli.branch import branch
-from gitclerk.cli.commit import commit
-from gitclerk.cli.issue import issue
-from gitclerk.cli.milestone import milestone
-from gitclerk.cli.pr import pr, ship, watch
-from gitclerk.cli.release import release
-from gitclerk.cli.shared import CLIGroup
+from acta.cli.board import board
+from acta.cli.branch import branch
+from acta.cli.commit import commit
+from acta.cli.issue import issue
+from acta.cli.milestone import milestone
+from acta.cli.pr import pr, ship, watch
+from acta.cli.release import release
+from acta.cli.shared import CLIGroup
 
 
 @click.group(cls=CLIGroup, invoke_without_command=True)
-@click.version_option(package_name="git-clerk")
+@click.version_option(package_name="git-acta")
 @click.pass_context
 def main(ctx: click.Context) -> None:
     """Structured git workflow: conventional commits, trunk-based branches, GitHub PR lifecycle.

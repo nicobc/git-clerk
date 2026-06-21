@@ -1,6 +1,6 @@
 import re
 
-from gitclerk.git import git
+from acta.git import git
 
 TYPES = frozenset(
     [

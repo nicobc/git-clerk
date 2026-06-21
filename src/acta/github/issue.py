@@ -2,9 +2,9 @@ import json
 import subprocess
 from dataclasses import dataclass
 
-from gitclerk.github import get_repo, gh
-from gitclerk.github.label import ensure_type_labels
-from gitclerk.github.milestone import milestone_view
+from acta.github import get_repo, gh
+from acta.github.label import ensure_type_labels
+from acta.github.milestone import milestone_view
 
 
 @dataclass

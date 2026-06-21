@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "git-clerk"
+name = "git-acta"
 version = "0.9.0"
 description = "Structured git workflow CLI: conventional commits, trunk-based branches, GitHub PR lifecycle"
 readme = "README.md"
@@ -20,12 +20,12 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nicobc/git-clerk"
-Source = "https://github.com/nicobc/git-clerk"
-Issues = "https://github.com/nicobc/git-clerk/issues"
+Homepage = "https://github.com/nicobc/git-acta"
+Source = "https://github.com/nicobc/git-acta"
+Issues = "https://github.com/nicobc/git-acta/issues"
 
 [project.scripts]
-git-clerk = "gitclerk.cli:main"
+acta = "acta.cli:main"
 
 [dependency-groups]
 dev = [
@@ -39,7 +39,7 @@ dev = [
 testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/gitclerk"]
+packages = ["src/acta"]
 
 [tool.ruff]
 line-length = 100
