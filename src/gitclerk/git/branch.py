@@ -44,11 +44,11 @@ def get_current_branch() -> str:
 
 
 def fetch_origin() -> None:
-    git("fetch", "origin")
+    git("fetch", "origin", quiet=True)
 
 
 def switch_new_branch(name: str) -> None:
-    git("switch", "-c", name, "origin/main")
+    git("switch", "-c", name, "origin/main", quiet=True)
 
 
 def switch_main() -> None:

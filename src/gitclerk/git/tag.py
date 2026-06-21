@@ -103,7 +103,7 @@ def next_release_tag(existing_tags: list[str], stable: bool) -> str:
 
 
 def fetch_tags() -> None:
-    git("fetch", "--tags", "origin")
+    git("fetch", "--tags", "origin", quiet=True)
 
 
 def list_tags(pattern: str = "v*") -> list[str]:
@@ -115,5 +115,5 @@ def create_tag(tag: str, ref: str = "origin/main") -> None:
         raise RuntimeError(
             f"tag '{tag}' already exists — re-run 'git clerk release' to get the next version"
         )
-    git("tag", tag, ref)
-    git("push", "origin", tag)
+    git("tag", tag, ref, quiet=True)
+    git("push", "origin", tag, quiet=True)

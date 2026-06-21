@@ -137,7 +137,7 @@ def start_issue(number: int) -> None:
     fetch_origin()
     switch_new_branch(branch_name)
     set_active_issue(number)
-    click.echo(f"On branch '{branch_name}', active issue is #{number}.")
+    click.echo(f"On branch {branch_name}, active issue is #{number}.")
     issue_body = issue_info.body.strip()
     if issue_body:
         click.echo()

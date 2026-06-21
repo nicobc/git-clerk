@@ -14,3 +14,4 @@ def branch(name: str) -> None:
         raise click.ClickException(str(error))
     fetch_origin()
     switch_new_branch(name)
+    click.echo(f"Branched {name} from origin/main.")

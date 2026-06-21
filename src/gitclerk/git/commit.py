@@ -13,7 +13,7 @@ def commit(header: str, body: str | None = None) -> None:
 
 
 def push_head() -> None:
-    git("push", "--set-upstream", "origin", "HEAD")
+    git("push", "--set-upstream", "origin", "HEAD", quiet=True)
 
 
 def commit_subjects(rev_range: str) -> list[str]:
