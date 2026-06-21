@@ -105,6 +105,7 @@ def main() -> None:
 
     new_tag = compute_next_semver(tags, bump)
     write_pyproject_version(new_tag.removeprefix("v"))
+    run("uv", "lock")  # keep uv.lock's self-version in sync so the bump commit carries it
 
     title = f"bump version to {new_tag.removeprefix('v')}"
     run("git-clerk", "branch", "chore/bump-version")
