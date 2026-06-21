@@ -16,6 +16,21 @@ MILESTONE_API = f"repos/{FAKE_REPO}/milestones"
 ISSUE_FIELDS = "number,title,labels,milestone,body"
 PR_URL = f"https://github.com/{FAKE_REPO}/pull/1"
 
+ROLLUP_CMD = ["gh", "pr", "view", "1", "--repo", FAKE_REPO, "--json", "statusCheckRollup"]
+ROLLUP_PASS = (
+    '{"statusCheckRollup": [{"__typename": "CheckRun", "status": "COMPLETED",'
+    ' "conclusion": "SUCCESS"}]}'
+)
+ROLLUP_FAIL = (
+    '{"statusCheckRollup": [{"__typename": "CheckRun", "status": "COMPLETED",'
+    ' "conclusion": "FAILURE"}]}'
+)
+ROLLUP_NONE = '{"statusCheckRollup": []}'
+
+
+def _noop_sleep(_seconds: float) -> None:
+    pass
+
 
 class TestPr:
     @pytest.fixture(autouse=True)
@@ -87,10 +102,7 @@ class TestShip:
 
     @pytest.fixture
     def _checks_pass(self, fp: FakeProcess) -> None:
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "pr", "checks", "1", "--repo", FAKE_REPO],
-            stdout="All checks pass",
-        )
+        fp.register(ROLLUP_CMD, stdout=ROLLUP_PASS)  # pyright: ignore[reportUnknownMemberType]
 
     @pytest.fixture
     def _on_main(self) -> None:
@@ -117,20 +129,12 @@ class TestShip:
         assert get_current_branch() == "feat/other"
 
     def test_ships_when_no_checks_reported(self, runner: CliRunner, fp: FakeProcess) -> None:
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "pr", "checks", "1", "--repo", FAKE_REPO],
-            returncode=1,
-            stderr="no checks reported on the 'feat/my-scope' branch",
-        )
+        fp.register(ROLLUP_CMD, stdout=ROLLUP_NONE)  # pyright: ignore[reportUnknownMemberType]
         result = runner.invoke(main, ["ship", "-y"])
         assert result.exit_code == 0, result.output
 
     def test_fails_if_checks_failing(self, runner: CliRunner, fp: FakeProcess) -> None:
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "pr", "checks", "1", "--repo", FAKE_REPO],
-            returncode=1,
-            stderr="some checks are failing",
-        )
+        fp.register(ROLLUP_CMD, stdout=ROLLUP_FAIL)  # pyright: ignore[reportUnknownMemberType]
         result = runner.invoke(main, ["ship", "-y"])
         assert result.exit_code == 1
         assert "failing or pending checks" in result.output
@@ -151,10 +155,7 @@ class TestShipWithMilestone:
             ["gh", "pr", "view", "feat/auth", "--repo", FAKE_REPO, "--json", "number,title"],
             stdout='{"number": 1, "title": "feat(auth): add login"}',
         )
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "pr", "checks", "1", "--repo", FAKE_REPO],
-            stdout="All checks pass",
-        )
+        fp.register(ROLLUP_CMD, stdout=ROLLUP_PASS)  # pyright: ignore[reportUnknownMemberType]
         fp.register(  # pyright: ignore[reportUnknownMemberType]
             ["gh", "pr", "merge", "1", "--squash", "--delete-branch", "--repo", FAKE_REPO],
         )
@@ -225,50 +226,41 @@ class TestWatch:
             ["gh", "pr", "view", "feat/my-scope", "--repo", FAKE_REPO, "--json", "number,title"],
             stdout='{"number": 1, "title": "feat(my-scope): add something"}',
         )
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "pr", "view", "1", "--repo", FAKE_REPO, "--json", "statusCheckRollup"],
-            stdout='{"statusCheckRollup": [{"state": "SUCCESS"}]}',
-        )
+
+    @pytest.fixture
+    def _instant_sleep(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr("gitclerk.github.pr.time.sleep", _noop_sleep)
+
+    @pytest.fixture
+    def _short_queue(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr("gitclerk.github.pr._CHECKS_QUEUE_TIMEOUT", 1)
+        monkeypatch.setattr("gitclerk.github.pr._CHECKS_POLL_INTERVAL", 1)
+        monkeypatch.setattr("gitclerk.github.pr.time.sleep", _noop_sleep)
+
+    def test_watches_once_checks_are_present(self, runner: CliRunner, fp: FakeProcess) -> None:
+        fp.register(ROLLUP_CMD, stdout=ROLLUP_PASS)  # pyright: ignore[reportUnknownMemberType]
         fp.register(  # pyright: ignore[reportUnknownMemberType]
             ["gh", "pr", "checks", "1", "--repo", FAKE_REPO, "--watch"],
         )
-
-    def test_watches_ci_for_current_pr(self, runner: CliRunner) -> None:
         result = runner.invoke(main, ["watch"])
         assert result.exit_code == 0, result.output
 
-
-class TestWatchNoCi:
-    @pytest.fixture(autouse=True)
-    def _setup(self, git_repo_with_github_remote: Path, fp: FakeProcess) -> None:
-        switch_new_branch("feat/my-scope")
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "pr", "view", "feat/my-scope", "--repo", FAKE_REPO, "--json", "number,title"],
-            stdout='{"number": 1, "title": "feat(my-scope): add something"}',
-        )
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "pr", "view", "1", "--repo", FAKE_REPO, "--json", "statusCheckRollup"],
-            stdout='{"statusCheckRollup": null}',
-        )
-
-    def test_returns_immediately_when_no_checks(self, runner: CliRunner, fp: FakeProcess) -> None:
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "pr", "checks", "1", "--repo", FAKE_REPO],
-            returncode=1,
-            stderr="no checks reported on the 'feat/my-scope' branch",
-        )
-        result = runner.invoke(main, ["watch"])
-        assert result.exit_code == 0, result.output
-
-    def test_watches_when_checks_pass_during_polling(
+    @pytest.mark.usefixtures("_instant_sleep")
+    def test_watches_once_checks_appear_after_polling(
         self, runner: CliRunner, fp: FakeProcess
     ) -> None:
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "pr", "checks", "1", "--repo", FAKE_REPO],
-            stdout="All checks pass",
-        )
+        fp.register(ROLLUP_CMD, stdout=ROLLUP_NONE)  # pyright: ignore[reportUnknownMemberType]
+        fp.register(ROLLUP_CMD, stdout=ROLLUP_PASS)  # pyright: ignore[reportUnknownMemberType]
         fp.register(  # pyright: ignore[reportUnknownMemberType]
             ["gh", "pr", "checks", "1", "--repo", FAKE_REPO, "--watch"],
         )
+        result = runner.invoke(main, ["watch"])
+        assert result.exit_code == 0, result.output
+
+    @pytest.mark.usefixtures("_short_queue")
+    def test_returns_without_watching_when_no_checks_appear(
+        self, runner: CliRunner, fp: FakeProcess
+    ) -> None:
+        fp.register(ROLLUP_CMD, stdout=ROLLUP_NONE)  # pyright: ignore[reportUnknownMemberType]
         result = runner.invoke(main, ["watch"])
         assert result.exit_code == 0, result.output
