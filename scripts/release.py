@@ -12,6 +12,7 @@ script and the tag it pushes always agree.
 """
 
 import argparse
+import json
 import re
 import subprocess
 import time
@@ -45,11 +46,15 @@ def write_pyproject_version(new_version: str) -> None:
     PYPROJECT.write_text(new_text)
 
 
-def wait_for_publish_run(tag: str) -> str:
-    """Poll until the publish run triggered by `tag` appears, then return its id."""
+def wait_for_publish_run(tag: str, commit_sha: str) -> str:
+    """Poll until the publish run for `tag` at `commit_sha` appears, then return its id.
+
+    Matching the commit SHA, not just the tag name, avoids latching onto a stale run from
+    an earlier push of the same tag (e.g. a deleted-and-recreated tag).
+    """
     deadline = time.monotonic() + RUN_QUEUE_TIMEOUT
     while time.monotonic() < deadline:
-        run_id = capture(
+        runs_json = capture(
             "gh",
             "run",
             "list",
@@ -58,16 +63,19 @@ def wait_for_publish_run(tag: str) -> str:
             "--branch",
             tag,
             "--limit",
-            "1",
+            "10",
             "--json",
-            "databaseId",
-            "--jq",
-            ".[0].databaseId // empty",
+            "databaseId,headSha",
         )
-        if run_id:
-            return run_id
+        runs: list[dict[str, object]] = json.loads(runs_json)
+        for run in runs:
+            if run["headSha"] == commit_sha:
+                return str(run["databaseId"])
         time.sleep(RUN_POLL_INTERVAL)
-    raise SystemExit(f"release: publish run for {tag} did not start within {RUN_QUEUE_TIMEOUT}s")
+    raise SystemExit(
+        f"release: publish run for {tag} ({commit_sha[:7]}) did not start "
+        f"within {RUN_QUEUE_TIMEOUT}s"
+    )
 
 
 def main() -> None:
@@ -108,8 +116,9 @@ def main() -> None:
     run("git-clerk", "ship", "-y")
     run("git-clerk", "release", *(["--stable"] if stable else []), "-y")
 
+    commit_sha = capture("git", "rev-parse", new_tag)
     print(f"release: watching publish job for {new_tag}")
-    run("gh", "run", "watch", wait_for_publish_run(new_tag), "--exit-status")
+    run("gh", "run", "watch", wait_for_publish_run(new_tag, commit_sha), "--exit-status")
 
 
 if __name__ == "__main__":
