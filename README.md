@@ -18,7 +18,7 @@ git-acta is intentionally opinionated. These constraints are not configurable:
 - **GitHub only** — PR and release operations rely on `gh`. GitLab and Bitbucket are not supported.
 - **Squash merges** — `ship` always squash-merges to keep `main`'s history linear.
 - **Single trunk** — `main` is the only integration branch. `develop`, `release/*`, and similar long-lived branches are out of scope. The trunk name is not configurable — repositories using a different default branch are not supported.
-- **Conventional commits** — branch names must follow `type/scope` using one of the [11 standard types](https://www.conventionalcommits.org).
+- **Conventional commits** — branch names must follow `type/scope` using one of the [11 standard types](https://www.conventionalcommits.org). An optional third segment (`type/scope/topic`) carries a human-readable topic; the commit type and scope are derived from the first two.
 
 If your workflow diverges from any of these, git-acta is not the right tool.
 
@@ -133,7 +133,7 @@ acta milestone new "Auth System" --scope auth -e
 # → opens $EDITOR for the description
 ```
 
-The `--scope` is used to derive branch names for all issues in this milestone. Every issue started under the milestone will live on a `type/scope` branch.
+The `--scope` is used to derive branch names for all issues in this milestone. Every issue started under the milestone will live on a `type/scope/N-title-slug` branch.
 
 **Create issues**
 
@@ -149,13 +149,13 @@ A type is required. A milestone is optional at creation time — an issue withou
 
 ```sh
 acta issue start 1
-# On branch 'feat/auth', active issue is #1.
+# On branch 'feat/auth/1-add-login', active issue is #1.
 #
 # ## Description
 # Login form with magic link.
 ```
 
-Creates the branch from the milestone's scope (`feat/auth`), switches to it, records the active issue in local git config, and prints the issue body so you have the description and acceptance criteria in front of you as you begin. From here, the standard commit/PR/ship workflow applies.
+Creates the branch from the issue's type and the milestone's scope, with a third segment from the issue number and title slug (`feat/auth/1-add-login`), switches to it, records the active issue in local git config, and prints the issue body so you have the description and acceptance criteria in front of you as you begin. From here, the standard commit/PR/ship workflow applies.
 
 **PR body gets `Closes #N` automatically**
 
@@ -187,12 +187,15 @@ acta issue discard 3                # close an issue as not planned
 Fetches the latest `origin/main` and creates a new branch from it.
 
 ```sh
-acta branch feat/user-auth     # → feat/user-auth
-acta branch fix/payment-api    # → fix/payment-api
-acta branch chore/deps         # → chore/deps
+acta branch feat/user-auth          # → feat/user-auth
+acta branch fix/payment-api         # → fix/payment-api
+acta branch chore/deps              # → chore/deps
+acta branch feat/user-auth/sso      # → feat/user-auth/sso
 ```
 
 The branch name is the only decision you make upfront. Every subsequent `commit` and `pr` command reads the type and scope from it — you never repeat yourself.
+
+You may add an optional third segment for a human-readable topic — `feat/user-auth/sso`. The type and scope are read from the first two segments (`feat`, `user-auth`); the topic keeps the branch name distinct and descriptive, so two branches sharing a type and scope can coexist.
 
 The fetch happens before branch creation, so you always start from the latest `main` regardless of how long ago you last pulled. If the branch already exists locally, git will error — delete it first or choose a different name.
 
@@ -420,9 +423,11 @@ Issues with no milestone are grouped last under `No milestone`.
 
 Starts work on an issue: creates the branch from the milestone's scope, switches to it, records the active issue in local git config, and prints the issue body. Requires the issue to have a type label and be assigned to a milestone.
 
+The branch is `type/scope/N-title-slug` — the issue's type and the milestone's scope, plus a third segment built from the issue number and a slug of its title. This keeps each issue on a distinct, self-describing branch even when several issues in a milestone share the same type and scope.
+
 ```sh
 acta issue start 1
-# On branch 'feat/auth', active issue is #1.
+# On branch 'feat/auth/1-add-login', active issue is #1.
 #
 # ## Description
 # Login form with magic link.
@@ -492,16 +497,17 @@ The tag is always placed on `origin/main`, so run `release` after shipping all P
 
 ## Branch naming
 
-All commands that read from the branch name (`commit`, `pr`) expect the format `type/scope`:
+All commands that read from the branch name (`commit`, `pr`) expect the format `type/scope`, with an optional third `topic` segment:
 
 ```
 feat/user-auth
 fix/payment-timeout
 chore/upgrade-deps
 docs/api-reference
+feat/user-auth/sso
 ```
 
-The type must be one of the standard conventional commit types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`. The scope must start with a letter or digit and may contain letters, digits, hyphens, and underscores — spaces and special characters are not allowed. Both are validated by `branch` before the branch is created, and by `commit` and `pr` when reading the current branch name.
+The type must be one of the standard conventional commit types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`. The scope must start with a letter or digit and may contain letters, digits, hyphens, and underscores — spaces and special characters are not allowed. An optional third segment may follow the scope (`type/scope/topic`) to give the branch a distinct, human-readable name; the type and scope are read from the first two segments. Type and scope are validated by `branch` before the branch is created, and by `commit` and `pr` when reading the current branch name.
 
 ## License
 

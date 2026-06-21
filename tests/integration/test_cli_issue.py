@@ -210,11 +210,11 @@ class TestIssueStart:
         result = runner.invoke(main, ["issue", "start", "1"])
         assert result.exit_code == 0, result.output
         assert result.output == (
-            "On branch feat/auth, active issue is #1.\n"
+            "On branch feat/auth/1-add-login, active issue is #1.\n"
             "\n"
             "## Description\nLogin form with magic link.\n"
         )
-        assert get_current_branch() == "feat/auth"
+        assert get_current_branch() == "feat/auth/1-add-login"
         assert get_active_issue() == 1
 
     @pytest.mark.usefixtures("git_repo_with_github_remote")
@@ -228,7 +228,7 @@ class TestIssueStart:
         )
         result = runner.invoke(main, ["issue", "start", "5"])
         assert result.exit_code == 0, result.output
-        assert result.output == "On branch feat/auth, active issue is #5.\n"
+        assert result.output == "On branch feat/auth/5-terse, active issue is #5.\n"
 
     @pytest.mark.usefixtures("git_repo_with_github_remote")
     def test_fails_without_milestone(self, runner: CliRunner, fp: FakeProcess) -> None:

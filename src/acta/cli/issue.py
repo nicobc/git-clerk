@@ -1,3 +1,5 @@
+import re
+
 import click
 
 from acta.cli.shared import TYPE_CHOICE, CLIGroup, open_editor
@@ -11,6 +13,11 @@ from acta.github.issue import (
     issue_view,
 )
 from acta.github.milestone import milestone_view
+
+
+def slugify_title(title: str) -> str:
+    """Turn an issue title into a short, branch-safe topic slug."""
+    return re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:40].rstrip("-")
 
 
 def compute_issue_column_widths(issues: list[IssueInfo]) -> tuple[int, int]:
@@ -133,7 +140,9 @@ def start_issue(number: int) -> None:
             f"Milestone #{milestone_ref.number} has no scope — "
             "its description must start with 'scope: SCOPE'"
         )
-    branch_name = f"{issue_type}/{scope}"
+    slug = slugify_title(issue_info.title)
+    topic = f"{number}-{slug}" if slug else str(number)
+    branch_name = f"{issue_type}/{scope}/{topic}"
     fetch_origin()
     switch_new_branch(branch_name)
     set_active_issue(number)

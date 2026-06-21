@@ -18,7 +18,9 @@ TYPES = frozenset(
     ]
 )
 
-_BRANCH_RE = re.compile(r"([^/]+)/([^/]+)")
+# type/scope, with an optional third descriptive segment (e.g. an issue topic);
+# the conventional-commit type and scope are derived from the first two.
+_BRANCH_RE = re.compile(r"([^/]+)/([^/]+)(?:/.+)?")
 _SCOPE_RE = re.compile(r"[a-z0-9][a-z0-9_-]*", re.IGNORECASE)
 
 
