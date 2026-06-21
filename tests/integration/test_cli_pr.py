@@ -51,6 +51,27 @@ class TestPr:
         assert result.exit_code == 0, result.output
         assert PR_URL in result.output
 
+    def test_breaking_appends_bang_to_title(self, runner: CliRunner, fp: FakeProcess) -> None:
+        fp.register(  # pyright: ignore[reportUnknownMemberType]
+            [
+                "gh",
+                "pr",
+                "create",
+                "--base",
+                "main",
+                "--title",
+                "feat(my-scope)!: add tests",
+                "--body",
+                "",
+                "--repo",
+                FAKE_REPO,
+            ],
+            stdout=PR_URL,
+        )
+        result = runner.invoke(main, ["pr", "--breaking", "add tests"])
+        assert result.exit_code == 0, result.output
+        assert PR_URL in result.output
+
 
 class TestShip:
     @pytest.fixture(autouse=True)

@@ -35,12 +35,18 @@ from gitclerk.github.pr import pr_checks_pass, pr_checks_watch, pr_create, pr_me
     help="Override the PR title scope inferred from the branch name.",
 )
 @click.option("-e", "--edit", "edit_body", is_flag=True, help="Open $EDITOR for the PR body.")
+@click.option(
+    "--breaking",
+    is_flag=True,
+    help="Mark a breaking change: append '!' to type(scope) per conventional commits.",
+)
 @click.argument("title")
 @click.argument("body", required=False, default=None)
 def pr(
     type_override: str | None,
     scope_override: str | None,
     edit_body: bool,
+    breaking: bool,
     title: str,
     body: str | None,
 ) -> None:
@@ -56,7 +62,8 @@ def pr(
         type_, scope = parse_branch(branch_name)
     except ValueError as error:
         raise click.ClickException(str(error))
-    pr_title = f"{type_override or type_}({scope_override or scope}): {title}"
+    breaking_marker = "!" if breaking else ""
+    pr_title = f"{type_override or type_}({scope_override or scope}){breaking_marker}: {title}"
     if edit_body:
         body = open_editor(f"{pr_title} ({branch_name})")
     active_issue_number = get_active_issue()

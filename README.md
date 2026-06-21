@@ -247,7 +247,7 @@ git clerk commit -s auth-core "fix token TTL"  # feat(auth-core): fix token TTL
 
 Pushes the current branch to origin (with upstream tracking), creates a GitHub PR against `main` with a conventional title derived from the branch name, prints the PR URL, then watches CI checks until they complete.
 
-The PR title is constructed the same way as a commit header: `type(scope): title`. You supply only the human-readable title.
+The PR title is constructed the same way as a commit header: `type(scope): title`. You supply only the human-readable title. Pass `--breaking` to mark a breaking change — it appends `!` to give `type(scope)!: title`, the conventional-commits marker. Because `ship` squash-merges the PR title onto `main`, this is where the breaking marker is recorded in history.
 
 **Body**
 
@@ -272,6 +272,7 @@ An empty string passed as BODY is treated the same as no body.
 | `-e` | Open `$EDITOR` to write the PR body interactively |
 | `-t TYPE` | Override the type in the PR title |
 | `-s SCOPE` | Override the scope in the PR title |
+| `--breaking` | Append `!` to `type(scope)` to mark a breaking change |
 
 The PR URL is printed to stdout as soon as the PR is created, before CI checks begin — you can share it while checks are still running. If checks fail, the run ends with a non-zero exit code.
 
