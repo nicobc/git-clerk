@@ -61,3 +61,18 @@ class TestCommit:
         result = runner.invoke(main, ["commit", "-s", "other", "cross-cutting change"])
         assert result.exit_code == 0, result.output
         assert _commit_subject() == "feat(other): cross-cutting change"
+
+    def test_push_flag_pushes_to_origin(self, git_repo: Path, runner: CliRunner) -> None:
+        result = runner.invoke(main, ["commit", "-AP", "add test file"])
+        assert result.exit_code == 0, result.output
+        assert "gh pr edit" in result.output
+        local_head = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=git_repo, capture_output=True, text=True
+        ).stdout.strip()
+        remote_head = subprocess.run(
+            ["git", "rev-parse", "origin/feat/my-scope"],
+            cwd=git_repo,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        assert remote_head == local_head

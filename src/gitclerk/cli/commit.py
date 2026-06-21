@@ -3,12 +3,13 @@ import click
 from gitclerk.cli.shared import TYPE_CHOICE, open_editor
 from gitclerk.git.branch import get_current_branch
 from gitclerk.git.branch import parse as parse_branch
-from gitclerk.git.commit import add_all
+from gitclerk.git.commit import add_all, push_head
 from gitclerk.git.commit import commit as git_commit
 
 
 @click.command()
 @click.option("-A", "stage_all", is_flag=True, help="Stage all changes before committing.")
+@click.option("-P", "--push", "push", is_flag=True, help="Push to origin after committing.")
 @click.option(
     "-t",
     "--type",
@@ -30,6 +31,7 @@ from gitclerk.git.commit import commit as git_commit
 @click.argument("body", required=False, default=None)
 def commit(
     stage_all: bool,
+    push: bool,
     type_override: str | None,
     scope_override: str | None,
     edit_body: bool,
@@ -55,3 +57,6 @@ def commit(
     if stage_all:
         add_all()
     git_commit(header, body)
+    if push:
+        push_head()
+        click.echo("Pushed. If a PR is open, refresh its description: gh pr edit")

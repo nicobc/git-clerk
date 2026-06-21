@@ -232,6 +232,7 @@ An empty string passed as BODY is treated the same as no body — only a non-emp
 | Flag | Description |
 |------|-------------|
 | `-A` | Stage all changes (`git add -A`) before committing |
+| `-P` | Push to origin after committing (combine as `-AP`) |
 | `-e` | Open `$EDITOR` to write the commit body interactively |
 | `-t TYPE` | Override the type inferred from the branch name |
 | `-s SCOPE` | Override the scope inferred from the branch name |
@@ -242,6 +243,8 @@ The `-t` and `-s` overrides are for cases where the commit type or scope differs
 git clerk commit -t chore "update lockfile"    # chore(user-auth): update lockfile
 git clerk commit -s auth-core "fix token TTL"  # feat(auth-core): fix token TTL
 ```
+
+`-P` pushes after committing, handy for follow-up commits once a PR is already open. It prints a reminder to refresh the PR description, since new commits may change the PR's scope.
 
 ### `pr TITLE [BODY]`
 
