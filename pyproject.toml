@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "git-clerk"
-version = "0.8.0"
+version = "0.9.0"
 description = "Structured git workflow CLI: conventional commits, trunk-based branches, GitHub PR lifecycle"
 readme = "README.md"
 license = "MIT"
