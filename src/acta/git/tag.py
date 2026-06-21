@@ -24,9 +24,7 @@ def detect_scheme(existing_tags: list[str]) -> Scheme | None:
     if not found_schemes:
         return None
     if len(found_schemes) > 1:
-        raise ValueError(
-            f"mixed {CALVER} and {SEMVER} tags found — pass --calver or --semver to proceed"
-        )
+        raise ValueError(f"mixed {CALVER} and {SEMVER} tags found — pass --scheme to proceed")
     return next(iter(found_schemes))
 
 

@@ -34,6 +34,7 @@ from acta.github.pr import pr_checks_pass, pr_checks_watch, pr_create, pr_merge,
     default=None,
     help="Override the PR title scope inferred from the branch name.",
 )
+@click.option("-b", "--body", "body", default=None, help="PR body. Mutually exclusive with -e.")
 @click.option("-e", "--edit", "edit_body", is_flag=True, help="Open $EDITOR for the PR body.")
 @click.option(
     "--breaking",
@@ -41,22 +42,21 @@ from acta.github.pr import pr_checks_pass, pr_checks_watch, pr_create, pr_merge,
     help="Mark a breaking change: append '!' to type(scope) per conventional commits.",
 )
 @click.argument("title")
-@click.argument("body", required=False, default=None)
 def pr(
     type_override: str | None,
     scope_override: str | None,
+    body: str | None,
     edit_body: bool,
     breaking: bool,
     title: str,
-    body: str | None,
 ) -> None:
     """Push branch, open a PR against main, and watch CI.
 
-    By default no body is added — pass BODY as a second argument for an inline
-    body, or use -e to open $EDITOR. BODY and -e are mutually exclusive.
+    By default no body is added — pass -b for an inline body, or -e to open
+    $EDITOR. -b and -e are mutually exclusive.
     """
     if body and edit_body:
-        raise click.UsageError("BODY and --edit are mutually exclusive")
+        raise click.UsageError("--body and --edit are mutually exclusive")
     branch_name = get_current_branch()
     try:
         type_, scope = parse_branch(branch_name)

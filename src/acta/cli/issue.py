@@ -52,7 +52,6 @@ def issue() -> None:
 
 @issue.command(name="new")
 @click.argument("title")
-@click.argument("body", required=False, default=None)
 @click.option("--type", "type_", required=True, type=TYPE_CHOICE, help="Issue type label.")
 @click.option(
     "--milestone",
@@ -62,17 +61,18 @@ def issue() -> None:
     metavar="NUMBER",
     help="Milestone number.",
 )
+@click.option("-b", "--body", "body", default=None, help="Issue body. Mutually exclusive with -e.")
 @click.option("-e", "--edit", "edit_body", is_flag=True, help="Open $EDITOR for the issue body.")
 def new_issue(
     title: str,
-    body: str | None,
     type_: str,
     milestone_number: int | None,
+    body: str | None,
     edit_body: bool,
 ) -> None:
     """Create a new issue."""
     if body and edit_body:
-        raise click.UsageError("BODY and --edit are mutually exclusive")
+        raise click.UsageError("--body and --edit are mutually exclusive")
     if edit_body:
         body = open_editor(title)
     number = issue_create(title, type_, body or "", milestone_number)

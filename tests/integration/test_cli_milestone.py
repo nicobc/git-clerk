@@ -46,7 +46,7 @@ def test_creates_milestone_with_description(runner: CliRunner, fp: FakeProcess) 
         stdout='{"number": 2}',
     )
     result = runner.invoke(
-        main, ["milestone", "new", "Auth System", "Build authentication.", "--scope", "auth"]
+        main, ["milestone", "new", "Auth System", "-d", "Build authentication.", "--scope", "auth"]
     )
     assert result.exit_code == 0, result.output
     assert result.output == "Milestone #2 created.\n"

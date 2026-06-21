@@ -17,18 +17,11 @@ from acta.git.tag import (
 
 @click.command()
 @click.option(
-    "--calver",
+    "--scheme",
     "scheme",
-    flag_value=CALVER,
+    type=click.Choice([CALVER, SEMVER], case_sensitive=False),
     default=None,
-    help="Use calendar versioning (vYYYY.MM.N).",
-)
-@click.option(
-    "--semver",
-    "scheme",
-    flag_value=SEMVER,
-    default=None,
-    help="Use semantic versioning (vMAJOR.MINOR.PATCH).",
+    help="Versioning scheme: calver (vYYYY.MM.N) or semver (vMAJOR.MINOR.PATCH).",
 )
 @click.option(
     "--stable", is_flag=True, help="Promote a 0.x project to v1.0.0 (SemVer only, one-time)."

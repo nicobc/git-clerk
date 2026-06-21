@@ -68,10 +68,10 @@ acta commit -A "add login form"
 
 Stages all changes and commits with the message `feat(user-auth): add login form`. The type and scope come from the branch name — you only write the description.
 
-For commits that need more context, pass the body as a second argument or open your editor with `-e`:
+For commits that need more context, pass the body with `-b` or open your editor with `-e`:
 
 ```sh
-acta commit -A "add login form" "Supports email and SSO providers."
+acta commit -A "add login form" -b "Supports email and SSO providers."
 # → commits with inline body (useful in scripts and LLM workflows)
 
 acta commit -A -e "add login form"
@@ -91,7 +91,13 @@ Pushes the branch with upstream tracking set, creates the PR against `main`, pri
 By default no body is added. To add one:
 
 ```sh
-acta pr "Add login form" "Adds email/password and SSO login. Closes #42."
+acta pr "Add login form" -b "Adds email/password and SSO login.
+
+## Changes
+- Email/password with bcrypt hashing
+- SSO via Google and GitHub
+
+Closes #42."
 # inline body
 
 acta pr -e "Add login form"
@@ -126,7 +132,7 @@ The board commands add a lightweight project layer on top of the core workflow u
 acta milestone new "Auth System" --scope auth
 # Milestone #1 created.
 
-acta milestone new "Auth System" "Handles login, registration, and SSO." --scope auth
+acta milestone new "Auth System" -d "Handles login, registration, and SSO." --scope auth
 # → with inline description
 
 acta milestone new "Auth System" --scope auth -e
@@ -199,7 +205,7 @@ You may add an optional third segment for a human-readable topic — `feat/user-
 
 The fetch happens before branch creation, so you always start from the latest `main` regardless of how long ago you last pulled. If the branch already exists locally, git will error — delete it first or choose a different name.
 
-### `commit DESCRIPTION [BODY]`
+### `commit DESCRIPTION`
 
 Creates a conventional commit by reading the type and scope from the current branch name. The commit message header is always `type(scope): description` — you only supply the description.
 
@@ -213,26 +219,26 @@ acta commit "add login form"
 By default there is no body — most commits don't need one. There are two ways to add one:
 
 ```sh
-# Inline — pass the body as a second positional argument.
-# Useful in scripts and LLM-driven workflows.
-acta commit "add login form" "Supports email and SSO providers."
+# Inline — pass the body with -b. Useful in scripts and LLM-driven workflows.
+acta commit "add login form" -b "Supports email and SSO providers."
 
 # Interactive — open $EDITOR. Save and exit to use the body; quit without
 # saving to abort.
 acta commit -e "add login form"
 ```
 
-An empty string passed as BODY is treated the same as no body — only a non-empty string is included in the commit.
+`-b` and `-e` are mutually exclusive. An empty string passed to `-b` is treated the same as no body — only a non-empty string is included in the commit.
 
 **Options**
 
 | Flag | Description |
 |------|-------------|
-| `-A` | Stage all changes (`git add -A`) before committing |
-| `-P` | Push to origin after committing (combine as `-AP`) |
-| `-e` | Open `$EDITOR` to write the commit body interactively |
-| `-t TYPE` | Override the type inferred from the branch name |
-| `-s SCOPE` | Override the scope inferred from the branch name |
+| `-A` / `--stage-all` | Stage all changes (`git add -A`) before committing |
+| `-P` / `--push` | Push to origin after committing (combine as `-AP`) |
+| `-b BODY` / `--body` | Commit body (mutually exclusive with `-e`) |
+| `-e` / `--edit` | Open `$EDITOR` to write the commit body interactively |
+| `-t TYPE` / `--type` | Override the type inferred from the branch name |
+| `-s SCOPE` / `--scope` | Override the scope inferred from the branch name |
 
 The `-t` and `-s` overrides are for cases where the commit type or scope differs from the branch — for example, bumping a lockfile on a `feat` branch:
 
@@ -243,7 +249,7 @@ acta commit -s auth-core "fix token TTL"  # feat(auth-core): fix token TTL
 
 `-P` pushes after committing, handy for follow-up commits once a PR is already open. It prints a reminder to refresh the PR description, since new commits may change the PR's scope.
 
-### `pr TITLE [BODY]`
+### `pr TITLE`
 
 Pushes the current branch to origin (with upstream tracking), creates a GitHub PR against `main` with a conventional title derived from the branch name, prints the PR URL, then watches CI checks until they complete.
 
@@ -254,24 +260,24 @@ The PR title is constructed the same way as a commit header: `type(scope): title
 By default no body is added. There are two ways to add one:
 
 ```sh
-# Inline — pass the body as a second positional argument.
-# Useful in scripts and LLM-driven workflows.
-acta pr "Add login form" "Adds email/password and SSO login. Closes #42."
+# Inline — pass the body with -b. Useful in scripts and LLM-driven workflows.
+acta pr "Add login form" -b "Adds email/password and SSO login. Closes #42."
 
 # Interactive — open $EDITOR. Save and exit to use the body;
 # quit without saving to abort.
 acta pr -e "Add login form"
 ```
 
-An empty string passed as BODY is treated the same as no body.
+`-b` and `-e` are mutually exclusive. An empty string passed to `-b` is treated the same as no body.
 
 **Options**
 
 | Flag | Description |
 |------|-------------|
-| `-e` | Open `$EDITOR` to write the PR body interactively |
-| `-t TYPE` | Override the type in the PR title |
-| `-s SCOPE` | Override the scope in the PR title |
+| `-b BODY` / `--body` | PR body (mutually exclusive with `-e`) |
+| `-e` / `--edit` | Open `$EDITOR` to write the PR body interactively |
+| `-t TYPE` / `--type` | Override the type in the PR title |
+| `-s SCOPE` / `--scope` | Override the scope in the PR title |
 | `--breaking` | Append `!` to `type(scope)` to mark a breaking change |
 
 The PR URL is printed to stdout as soon as the PR is created, before CI checks begin — you can share it while checks are still running. If checks fail, the run ends with a non-zero exit code.
@@ -343,14 +349,14 @@ acta board
 # #2  Portfolio — 2 issues open
 ```
 
-### `milestone new TITLE [DESCRIPTION]`
+### `milestone new TITLE`
 
 Creates a GitHub Milestone. The `--scope` option is required and determines the branch name prefix used by all issues in this milestone.
 
 ```sh
 acta milestone new "Auth System" --scope auth
-acta milestone new "Auth System" "Handles login and SSO." --scope auth
-acta milestone new "Auth System" --scope auth -e    # opens $EDITOR
+acta milestone new "Auth System" -d "Handles login and SSO." --scope auth
+acta milestone new "Auth System" -e --scope auth    # opens $EDITOR
 ```
 
 **Options**
@@ -358,7 +364,8 @@ acta milestone new "Auth System" --scope auth -e    # opens $EDITOR
 | Flag | Description |
 |------|-------------|
 | `--scope SCOPE` | Branch scope for all issues in this milestone (required) |
-| `-e` | Open `$EDITOR` for the description |
+| `-d DESC` / `--description` | Milestone description (mutually exclusive with `-e`) |
+| `-e` / `--edit` | Open `$EDITOR` for the description |
 
 ### `milestone list`
 
@@ -381,13 +388,14 @@ Reopens a closed milestone.
 acta milestone reopen 1
 ```
 
-### `issue new TITLE [BODY]`
+### `issue new TITLE`
 
 Creates a GitHub Issue. `--type` is required. `--milestone` is optional — an issue without one sits in the backlog. Both are required before `issue start` can be used. Type labels are created in the repository automatically on first use.
 
 ```sh
 acta issue new "Add login form" --type feat
 acta issue new "Add login form" --type feat --milestone 1
+acta issue new "Add login form" --type feat --milestone 1 -b "Magic-link login."
 acta issue new "Add login form" --type feat --milestone 1 -e
 ```
 
@@ -397,7 +405,8 @@ acta issue new "Add login form" --type feat --milestone 1 -e
 |------|-------------|
 | `--type TYPE` | Conventional commit type label (required) |
 | `--milestone NUMBER` | Milestone number |
-| `-e` | Open `$EDITOR` for the issue body |
+| `-b BODY` / `--body` | Issue body (mutually exclusive with `-e`) |
+| `-e` / `--edit` | Open `$EDITOR` for the issue body |
 
 ### `issue list`
 
@@ -450,22 +459,21 @@ Tags the current tip of `origin/main` and pushes the tag. It fetches the latest 
 For SemVer the bump is derived from the conventional-commit subjects since the last tag: a `feat` bumps minor, anything else bumps patch, and once the project is stable (1.0+) a `!` breaking change bumps major. While still 0.x a breaking change is capped at minor, since a pre-1.0 breaking change must not force `v1.0.0`. There is no `--bump`: the commits decide.
 
 ```sh
-acta release             # derive and tag the next version (auto-detects scheme)
-acta release --semver    # force SemVer (only needed for the very first tag)
-acta release --calver    # use calendar versioning instead
-acta release --stable    # one-time promotion of a 0.x project to v1.0.0
+acta release                  # derive and tag the next version (auto-detects scheme)
+acta release --scheme semver  # force SemVer (only needed for the very first tag)
+acta release --scheme calver  # use calendar versioning instead
+acta release --stable         # one-time promotion of a 0.x project to v1.0.0
 ```
 
 **Going stable.** `v1.0.0` is the one version the commits cannot derive: the 0.x cap stops at minor, because declaring stability is a deliberate decision. Pass `--stable` once to make that jump. After 1.0, breaking changes drive majors automatically, so there is no further override.
 
-**Scheme detection.** If the repository already has version tags, git-acta detects the scheme automatically, so `--calver` and `--semver` are not needed. If no tags exist yet, it prompts you to choose. If both CalVer and SemVer tags are found, it exits with an error; pass `--calver` or `--semver` explicitly to proceed.
+**Scheme detection.** If the repository already has version tags, git-acta detects the scheme automatically, so `--scheme` is not needed. If no tags exist yet, it prompts you to choose. If both CalVer and SemVer tags are found, it exits with an error; pass `--scheme` explicitly to proceed.
 
 **Options**
 
 | Flag | Description |
 |------|-------------|
-| `--calver` | Use calendar versioning |
-| `--semver` | Use semantic versioning |
+| `--scheme SCHEME` | Versioning scheme: `calver` or `semver` |
 | `--stable` | Promote a 0.x project to `v1.0.0` (SemVer only, one-time) |
 | `-y` / `--yes` | Skip the confirmation prompt |
 

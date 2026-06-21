@@ -15,20 +15,20 @@ def _commit_and_push(git_repo: Path, subject: str) -> None:
 
 @pytest.mark.usefixtures("git_repo")
 def test_calver_creates_tag(runner: CliRunner) -> None:
-    result = runner.invoke(main, ["release", "--calver", "-y"])
+    result = runner.invoke(main, ["release", "--scheme", "calver", "-y"])
     assert result.exit_code == 0, result.output
     assert len(list_tags(pattern="*")) == 1
 
 
 @pytest.mark.usefixtures("git_repo")
 def test_semver_first_release_is_v0_1_0(runner: CliRunner) -> None:
-    result = runner.invoke(main, ["release", "--semver", "-y"])
+    result = runner.invoke(main, ["release", "--scheme", "semver", "-y"])
     assert result.exit_code == 0, result.output
     assert "v0.1.0" in list_tags()
 
 
 def test_semver_derives_patch_without_a_feat(git_repo: Path, runner: CliRunner) -> None:
-    runner.invoke(main, ["release", "--semver", "-y"])  # v0.1.0
+    runner.invoke(main, ["release", "--scheme", "semver", "-y"])  # v0.1.0
     _commit_and_push(git_repo, "fix(app): a bug")
     result = runner.invoke(main, ["release", "-y"])
     assert result.exit_code == 0, result.output
@@ -36,7 +36,7 @@ def test_semver_derives_patch_without_a_feat(git_repo: Path, runner: CliRunner) 
 
 
 def test_semver_derives_minor_for_a_feat(git_repo: Path, runner: CliRunner) -> None:
-    runner.invoke(main, ["release", "--semver", "-y"])  # v0.1.0
+    runner.invoke(main, ["release", "--scheme", "semver", "-y"])  # v0.1.0
     _commit_and_push(git_repo, "feat(app): a feature")
     result = runner.invoke(main, ["release", "-y"])
     assert result.exit_code == 0, result.output
@@ -44,7 +44,7 @@ def test_semver_derives_minor_for_a_feat(git_repo: Path, runner: CliRunner) -> N
 
 
 def test_semver_caps_breaking_at_minor_pre_1_0(git_repo: Path, runner: CliRunner) -> None:
-    runner.invoke(main, ["release", "--semver", "-y"])  # v0.1.0
+    runner.invoke(main, ["release", "--scheme", "semver", "-y"])  # v0.1.0
     _commit_and_push(git_repo, "feat(app)!: breaking change")
     result = runner.invoke(main, ["release", "-y"])
     assert result.exit_code == 0, result.output
@@ -52,14 +52,14 @@ def test_semver_caps_breaking_at_minor_pre_1_0(git_repo: Path, runner: CliRunner
 
 
 def test_stable_promotes_to_v1(git_repo: Path, runner: CliRunner) -> None:
-    runner.invoke(main, ["release", "--semver", "-y"])  # v0.1.0
+    runner.invoke(main, ["release", "--scheme", "semver", "-y"])  # v0.1.0
     result = runner.invoke(main, ["release", "--stable", "-y"])
     assert result.exit_code == 0, result.output
     assert "v1.0.0" in list_tags()
 
 
 def test_breaking_drives_major_once_stable(git_repo: Path, runner: CliRunner) -> None:
-    runner.invoke(main, ["release", "--semver", "-y"])  # v0.1.0
+    runner.invoke(main, ["release", "--scheme", "semver", "-y"])  # v0.1.0
     runner.invoke(main, ["release", "--stable", "-y"])  # v1.0.0
     _commit_and_push(git_repo, "feat(app)!: breaking change")
     result = runner.invoke(main, ["release", "-y"])
@@ -68,7 +68,7 @@ def test_breaking_drives_major_once_stable(git_repo: Path, runner: CliRunner) ->
 
 
 def test_stable_rejected_when_already_stable(git_repo: Path, runner: CliRunner) -> None:
-    runner.invoke(main, ["release", "--semver", "-y"])  # v0.1.0
+    runner.invoke(main, ["release", "--scheme", "semver", "-y"])  # v0.1.0
     runner.invoke(main, ["release", "--stable", "-y"])  # v1.0.0
     result = runner.invoke(main, ["release", "--stable", "-y"])
     assert result.exit_code == 1
@@ -77,7 +77,7 @@ def test_stable_rejected_when_already_stable(git_repo: Path, runner: CliRunner) 
 
 @pytest.mark.usefixtures("git_repo")
 def test_tag_is_pushed_to_remote(bare_remote: Path, runner: CliRunner) -> None:
-    runner.invoke(main, ["release", "--semver", "-y"])
+    runner.invoke(main, ["release", "--scheme", "semver", "-y"])
     remote_tags = (
         subprocess.run(
             ["git", "tag", "--list"],

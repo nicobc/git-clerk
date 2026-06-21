@@ -1,4 +1,5 @@
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -33,6 +34,28 @@ def _noop_sleep(_seconds: float) -> None:
 
 
 class TestPr:
+    @pytest.fixture
+    def register_pr_create(self, fp: FakeProcess) -> Callable[..., None]:
+        def _register(title: str = "feat(my-scope): add tests", body: str = "") -> None:
+            fp.register(  # pyright: ignore[reportUnknownMemberType]
+                [
+                    "gh",
+                    "pr",
+                    "create",
+                    "--base",
+                    "main",
+                    "--title",
+                    title,
+                    "--body",
+                    body,
+                    "--repo",
+                    FAKE_REPO,
+                ],
+                stdout=PR_URL,
+            )
+
+        return _register
+
     @pytest.fixture(autouse=True)
     def _setup(self, git_repo_with_github_remote: Path, fp: FakeProcess) -> None:
         switch_new_branch("feat/my-scope")
@@ -40,49 +63,36 @@ class TestPr:
         add_all()
         git_commit("feat(my-scope): add something")
         fp.register(  # pyright: ignore[reportUnknownMemberType]
-            [
-                "gh",
-                "pr",
-                "create",
-                "--base",
-                "main",
-                "--title",
-                "feat(my-scope): add tests",
-                "--body",
-                "",
-                "--repo",
-                FAKE_REPO,
-            ],
-            stdout=PR_URL,
-        )
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
             ["gh", "pr", "view", "1", "--repo", FAKE_REPO, "--json", "statusCheckRollup"],
             stdout='{"statusCheckRollup": [{"state": "SUCCESS"}]}',
         )
         fp.register(["gh", "pr", "checks", "1", "--repo", FAKE_REPO, "--watch"])  # pyright: ignore[reportUnknownMemberType]
 
-    def test_pushes_branch_and_creates_pr(self, runner: CliRunner) -> None:
+    def test_pushes_branch_and_creates_pr(
+        self, runner: CliRunner, register_pr_create: Callable[..., None]
+    ) -> None:
+        register_pr_create()
         result = runner.invoke(main, ["pr", "add tests"])
         assert result.exit_code == 0, result.output
         assert PR_URL in result.output
 
-    def test_breaking_appends_bang_to_title(self, runner: CliRunner, fp: FakeProcess) -> None:
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            [
-                "gh",
-                "pr",
-                "create",
-                "--base",
-                "main",
-                "--title",
-                "feat(my-scope)!: add tests",
-                "--body",
-                "",
-                "--repo",
-                FAKE_REPO,
-            ],
-            stdout=PR_URL,
-        )
+    def test_body_flag_passes_body(
+        self, runner: CliRunner, register_pr_create: Callable[..., None]
+    ) -> None:
+        register_pr_create(body="Adds coverage.")
+        result = runner.invoke(main, ["pr", "-b", "Adds coverage.", "add tests"])
+        assert result.exit_code == 0, result.output
+        assert PR_URL in result.output
+
+    def test_body_and_edit_are_mutually_exclusive(self, runner: CliRunner) -> None:
+        result = runner.invoke(main, ["pr", "-b", "x", "-e", "add tests"])
+        assert result.exit_code == 2
+        assert "mutually exclusive" in result.output
+
+    def test_breaking_appends_bang_to_title(
+        self, runner: CliRunner, register_pr_create: Callable[..., None]
+    ) -> None:
+        register_pr_create(title="feat(my-scope)!: add tests")
         result = runner.invoke(main, ["pr", "--breaking", "add tests"])
         assert result.exit_code == 0, result.output
         assert PR_URL in result.output

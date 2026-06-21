@@ -35,6 +35,25 @@ class TestCommit:
         assert result.exit_code == 0, result.output
         assert _commit_subject() == "feat(my-scope): add test file"
 
+    @pytest.mark.usefixtures("_stage_file")
+    def test_body_flag_adds_body(self, runner: CliRunner) -> None:
+        result = runner.invoke(main, ["commit", "-b", "Extra context.", "add test file"])
+        assert result.exit_code == 0, result.output
+        body = subprocess.run(
+            ["git", "log", "--format=%b", "-1"], capture_output=True, text=True
+        ).stdout.strip()
+        assert body == "Extra context."
+
+    @pytest.mark.usefixtures("_stage_file")
+    def test_body_and_edit_are_mutually_exclusive(self, runner: CliRunner) -> None:
+        result = runner.invoke(main, ["commit", "-b", "x", "-e", "add test file"])
+        assert result.exit_code == 2
+        assert "mutually exclusive" in result.output
+
+    def test_stage_all_long_form(self, git_repo: Path, runner: CliRunner) -> None:
+        result = runner.invoke(main, ["commit", "--stage-all", "add test file"])
+        assert result.exit_code == 0, result.output
+
     def test_stage_all_flag(self, git_repo: Path, runner: CliRunner) -> None:
         result = runner.invoke(main, ["commit", "-A", "add test file"])
         assert result.exit_code == 0, result.output

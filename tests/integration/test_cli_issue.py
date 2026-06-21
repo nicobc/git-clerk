@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import pytest
 from click.testing import CliRunner
 from pytest_subprocess import FakeProcess
@@ -13,25 +15,49 @@ ISSUE_FIELDS = "number,title,labels,milestone"
 ISSUE_VIEW_FIELDS = "number,title,labels,milestone,body"
 
 
+@pytest.fixture
+def register_issue_create(fp: FakeProcess) -> Callable[..., None]:
+    def _register(
+        title: str = "Add login",
+        body: str = "",
+        stdout: str = f"https://github.com/{FAKE_REPO}/issues/1",
+    ) -> None:
+        fp.register(  # pyright: ignore[reportUnknownMemberType]
+            [
+                "gh",
+                "issue",
+                "create",
+                "--title",
+                title,
+                "--body",
+                body,
+                "--repo",
+                FAKE_REPO,
+                "--label",
+                "type: feat",
+            ],
+            stdout=stdout,
+        )
+
+    return _register
+
+
 @pytest.mark.usefixtures("git_repo_with_github_remote")
-def test_creates_issue(runner: CliRunner, fp: FakeProcess) -> None:
-    fp.register(  # pyright: ignore[reportUnknownMemberType]
-        [
-            "gh",
-            "issue",
-            "create",
-            "--title",
-            "Add login",
-            "--body",
-            "",
-            "--repo",
-            FAKE_REPO,
-            "--label",
-            "type: feat",
-        ],
-        stdout=f"https://github.com/{FAKE_REPO}/issues/1",
-    )
+def test_creates_issue(runner: CliRunner, register_issue_create: Callable[..., None]) -> None:
+    register_issue_create()
     result = runner.invoke(main, ["issue", "new", "Add login", "--type", "feat"])
+    assert result.exit_code == 0, result.output
+    assert result.output == "Issue #1 created.\n"
+
+
+@pytest.mark.usefixtures("git_repo_with_github_remote")
+def test_creates_issue_with_body(
+    runner: CliRunner, register_issue_create: Callable[..., None]
+) -> None:
+    register_issue_create(body="Login via SSO.")
+    result = runner.invoke(
+        main, ["issue", "new", "Add login", "-b", "Login via SSO.", "--type", "feat"]
+    )
     assert result.exit_code == 0, result.output
     assert result.output == "Issue #1 created.\n"
 

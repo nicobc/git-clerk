@@ -32,13 +32,19 @@ def milestone() -> None:
 
 @milestone.command(name="new")
 @click.argument("title")
-@click.argument("description", required=False, default=None)
 @click.option("--scope", required=True, help="Scope used for branch names in this milestone.")
+@click.option(
+    "-d",
+    "--description",
+    "description",
+    default=None,
+    help="Milestone description. Mutually exclusive with -e.",
+)
 @click.option("-e", "--edit", "edit_body", is_flag=True, help="Open $EDITOR for the description.")
-def new_milestone(title: str, description: str | None, scope: str, edit_body: bool) -> None:
+def new_milestone(title: str, scope: str, description: str | None, edit_body: bool) -> None:
     """Create a new milestone."""
     if description and edit_body:
-        raise click.UsageError("DESCRIPTION and --edit are mutually exclusive")
+        raise click.UsageError("--description and --edit are mutually exclusive")
     if edit_body:
         description = open_editor(title)
     number = milestone_create(title, scope, description or "")
