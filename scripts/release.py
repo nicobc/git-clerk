@@ -89,7 +89,14 @@ def wait_for_publish_run(tag: str) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Bump the version, ship, tag, and publish.")
     parser.add_argument("bump", choices=["patch", "minor", "major"])
-    bump = parser.parse_args().bump
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the version and steps without changing anything.",
+    )
+    args = parser.parse_args()
+    bump: str = args.bump
+    dry_run: bool = args.dry_run
 
     fetch_tags()
     tags = list_tags()
@@ -104,10 +111,19 @@ def main() -> None:
             )
 
     new_tag = compute_next_semver(tags, bump)
-    write_pyproject_version(new_tag.removeprefix("v"))
+    new_version = new_tag.removeprefix("v")
+    title = f"bump version to {new_version}"
+
+    if dry_run:
+        print(f"release: would tag {new_tag} ({bump})")
+        print(f"  set pyproject.toml + uv.lock to {new_version}")
+        print(f'  git-clerk branch/commit/pr/ship for "{title}"')
+        print(f"  git-clerk release --bump {bump} -y, then watch the publish job")
+        return
+
+    write_pyproject_version(new_version)
     run("uv", "lock")  # keep uv.lock's self-version in sync so the bump commit carries it
 
-    title = f"bump version to {new_tag.removeprefix('v')}"
     run("git-clerk", "branch", "chore/bump-version")
     run("git-clerk", "commit", "-A", title)
     run("git-clerk", "pr", title)
