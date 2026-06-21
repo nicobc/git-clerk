@@ -1,6 +1,17 @@
 import pytest
+from click.testing import CliRunner
 
+from acta.cli import main
 from acta.cli.shared import strip_comments
+
+
+@pytest.mark.parametrize("command", ["commit", "branch", "pr", "ship", "release", "board"])
+def test_subcommand_help_exits_zero(command: str) -> None:
+    # Click's --help raises Exit(0), which subclasses RuntimeError; CLIGroup must not
+    # swallow it into a spurious "Error: 0".
+    result = CliRunner().invoke(main, [command, "--help"])
+    assert result.exit_code == 0, result.output
+    assert "Error" not in result.output
 
 
 @pytest.mark.parametrize(

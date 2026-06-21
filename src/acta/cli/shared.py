@@ -10,6 +10,8 @@ class CLIGroup(click.Group):
     def invoke(self, ctx: click.Context) -> object:
         try:
             return super().invoke(ctx)
+        except (click.exceptions.Exit, click.exceptions.Abort):
+            raise  # Click's own control flow (--help, ctrl-C); both subclass RuntimeError
         except subprocess.CalledProcessError as error:
             if error.stderr:
                 click.echo(error.stderr, err=True, nl=False)
