@@ -5,7 +5,7 @@ from datetime import date
 from typing import Final, Literal, TypeAlias
 
 from acta.git import git
-from acta.git.commit import commit_subjects
+from acta.git.commit import get_commit_subjects
 
 CALVER: Final = "CalVer"
 SEMVER: Final = "SemVer"
@@ -165,7 +165,7 @@ def next_release_tag(existing_tags: list[str], stable: bool) -> str:
             raise ValueError("--stable only promotes 0.x to v1.0.0; this project is already stable")
         return "v1.0.0"
     current_major = semver_major(latest) if latest is not None else 0
-    subjects = commit_subjects(f"{latest}..origin/main") if latest is not None else []
+    subjects = get_commit_subjects(f"{latest}..origin/main") if latest is not None else []
     return compute_next_semver(existing_tags, derive_bump(subjects, current_major))
 
 

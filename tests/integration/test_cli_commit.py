@@ -6,14 +6,11 @@ from click.testing import CliRunner
 
 from acta.cli import main
 from acta.git.branch import switch_new_branch
+from acta.git.commit import get_commit_subjects
 
 
 def _commit_subject() -> str:
-    return subprocess.run(
-        ["git", "log", "--format=%s", "-1"],
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
+    return get_commit_subjects("HEAD")[0]
 
 
 class TestCommit:

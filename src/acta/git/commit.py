@@ -21,6 +21,6 @@ def push_head() -> None:
     git("push", "--set-upstream", "origin", "HEAD", quiet=True)
 
 
-def commit_subjects(rev_range: str) -> list[str]:
+def get_commit_subjects(rev_range: str) -> list[str]:
     """Return the subject line of each commit in ``rev_range`` (e.g. ``v1.0.0..origin/main``)."""
     return git("log", rev_range, "--format=%s", capture=True).splitlines()
