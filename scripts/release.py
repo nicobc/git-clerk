@@ -18,7 +18,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from acta.git.commit import commit_subjects
+from acta.git.commit import get_commit_subjects
 from acta.git.tag import fetch_tags, latest_semver_tag, list_tags, next_release_tag
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -121,7 +121,7 @@ def main() -> None:
         print(f"  current version: {latest or '(none)'}")
         if latest is not None:
             print(f"  commits since {latest}:")
-            for subject in commit_subjects(f"{latest}..origin/main"):
+            for subject in get_commit_subjects(f"{latest}..origin/main"):
                 print(f"    {subject}")
         print(f"  bump: {_describe_bump(latest, new_tag)} → {new_tag}")
         print(f"  on a real run: ship the bump, push {new_tag}, and publish to PyPI")
