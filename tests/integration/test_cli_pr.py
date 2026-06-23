@@ -138,6 +138,20 @@ class TestShip:
         assert result.exit_code == 0, result.output
         assert get_current_branch() == "feat/other"
 
+    @pytest.mark.usefixtures("_checks_pass")
+    def test_prunes_stale_tracking_refs_on_ship(
+        self, git_repo_with_github_remote: Path, runner: CliRunner
+    ) -> None:
+        ref = "refs/remotes/origin/chore/old"
+        subprocess.run(
+            ["git", "update-ref", ref, "HEAD"], cwd=git_repo_with_github_remote, check=True
+        )
+        exists = ["git", "show-ref", "--verify", "--quiet", ref]
+        assert subprocess.run(exists, cwd=git_repo_with_github_remote).returncode == 0
+        result = runner.invoke(main, ["ship", "-y"])
+        assert result.exit_code == 0, result.output
+        assert subprocess.run(exists, cwd=git_repo_with_github_remote).returncode != 0
+
     def test_ships_when_no_checks_reported(self, runner: CliRunner, fp: FakeProcess) -> None:
         fp.register(ROLLUP_CMD, stdout=ROLLUP_NONE)  # pyright: ignore[reportUnknownMemberType]
         result = runner.invoke(main, ["ship", "-y"])
@@ -206,7 +220,7 @@ class TestShipWithMilestone:
         assert result.exit_code == 0, result.output
         assert result.output == (
             "Merged PR #1 feat/auth → main\n"
-            "Switched to main, pulled origin/main, deleted feat/auth.\n"
+            "Switched to main, pulled origin/main, deleted feat/auth, and pruned stale refs.\n"
             'Milestone #1 "Auth System" completed and closed.\n'
         )
 
@@ -231,7 +245,7 @@ class TestShipWithMilestone:
         assert result.exit_code == 0, result.output
         assert result.output == (
             "Merged PR #1 feat/auth → main\n"
-            "Switched to main, pulled origin/main, deleted feat/auth.\n"
+            "Switched to main, pulled origin/main, deleted feat/auth, and pruned stale refs.\n"
         )
 
 

@@ -5,6 +5,7 @@ from acta.git.branch import (
     delete_branch,
     get_current_branch,
     merge_origin_main,
+    prune_origin,
     pull_origin_main,
     switch_branch,
     switch_main,
@@ -117,7 +118,10 @@ def ship(update_branch: str | None, confirmed: bool) -> None:
     switch_main()
     pull_origin_main()
     delete_branch(branch_name)
-    click.echo(f"Switched to main, pulled origin/main, deleted {branch_name}.")
+    prune_origin()
+    click.echo(
+        f"Switched to main, pulled origin/main, deleted {branch_name}, and pruned stale refs."
+    )
     if update_branch:
         switch_branch(update_branch)
         merge_origin_main()

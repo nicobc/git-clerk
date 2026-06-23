@@ -46,7 +46,11 @@ def get_current_branch() -> str:
 
 
 def fetch_origin() -> None:
-    git("fetch", "origin", quiet=True)
+    git("fetch", "--prune", "origin", quiet=True)
+
+
+def prune_origin() -> None:
+    git("remote", "prune", "origin", quiet=True)
 
 
 def switch_new_branch(name: str) -> None:
