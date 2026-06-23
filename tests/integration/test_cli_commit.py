@@ -70,6 +70,12 @@ class TestCommit:
         assert "file.txt" in committed
 
     @pytest.mark.usefixtures("_stage_file")
+    def test_strips_redundant_type_prefix(self, runner: CliRunner) -> None:
+        result = runner.invoke(main, ["commit", "fix: token TTL"])
+        assert result.exit_code == 0, result.output
+        assert _commit_subject() == "feat(my-scope): token TTL"
+
+    @pytest.mark.usefixtures("_stage_file")
     def test_type_override(self, runner: CliRunner) -> None:
         result = runner.invoke(main, ["commit", "-t", "fix", "fix bug"])
         assert result.exit_code == 0, result.output

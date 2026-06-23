@@ -1,6 +1,6 @@
 import click
 
-from acta.cli.shared import TYPE_CHOICE, open_editor
+from acta.cli.shared import TYPE_CHOICE, open_editor, strip_type_prefix
 from acta.git.branch import get_current_branch
 from acta.git.branch import parse as parse_branch
 from acta.git.commit import add_all, push_head
@@ -53,7 +53,9 @@ def commit(
         type_, scope = parse_branch(branch_name)
     except ValueError as error:
         raise click.ClickException(str(error))
-    header = f"{type_override or type_}({scope_override or scope}): {description}"
+    header = (
+        f"{type_override or type_}({scope_override or scope}): {strip_type_prefix(description)}"
+    )
     if edit_body:
         body = open_editor(header)
     if stage_all:
