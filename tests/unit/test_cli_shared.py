@@ -2,7 +2,7 @@ import pytest
 from click.testing import CliRunner
 
 from acta.cli import main
-from acta.cli.shared import strip_comments
+from acta.cli.shared import strip_comments, strip_type_prefix
 
 
 @pytest.mark.parametrize("command", ["commit", "branch", "pr", "ship", "release", "board"])
@@ -44,3 +44,32 @@ def test_subcommand_help_exits_zero(command: str) -> None:
 )
 def test_strip_comments(raw: str, expected: str) -> None:
     assert strip_comments(raw) == expected
+
+
+@pytest.mark.parametrize(
+    "title, expected",
+    [
+        ("add login form", "add login form"),
+        ("fix: token TTL", "token TTL"),
+        ("fix(auth): token TTL", "token TTL"),
+        ("feat!: drop legacy api", "drop legacy api"),
+        ("fix(auth)!: token TTL", "token TTL"),
+        ("chore: bump deps", "bump deps"),
+        ("fixup the reader", "fixup the reader"),
+        ("notatype: keep this", "notatype: keep this"),
+        ("Fix: keep this", "Fix: keep this"),
+    ],
+    ids=[
+        "no_prefix",
+        "bare_type",
+        "type_with_scope",
+        "breaking_bang",
+        "scope_and_bang",
+        "another_type",
+        "type_as_word_not_prefix",
+        "unknown_type_kept",
+        "capitalized_kept",
+    ],
+)
+def test_strip_type_prefix(title: str, expected: str) -> None:
+    assert strip_type_prefix(title) == expected

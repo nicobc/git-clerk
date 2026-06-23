@@ -1,9 +1,13 @@
+import re
 import subprocess
 import sys
 
 import click
 
 from acta.git.branch import TYPES
+
+# A leading conventional-commit prefix: type, optional (scope), optional !, colon.
+_TYPE_PREFIX_RE = re.compile(rf"^(?:{'|'.join(sorted(TYPES))})(?:\([^)]*\))?!?:\s*")
 
 
 class CLIGroup(click.Group):
@@ -40,6 +44,15 @@ def open_editor(hint: str) -> str:
     if not body_text:
         raise click.Abort()
     return body_text
+
+
+def strip_type_prefix(title: str) -> str:
+    """Drop a redundant leading conventional-commit prefix from a caller title.
+
+    acta derives type(scope) from the branch and prepends it, so a prefix the
+    caller typed (e.g. 'fix: x' or 'fix(auth)!: x') would otherwise double up.
+    """
+    return _TYPE_PREFIX_RE.sub("", title, count=1)
 
 
 TYPE_CHOICE = click.Choice(sorted(TYPES))

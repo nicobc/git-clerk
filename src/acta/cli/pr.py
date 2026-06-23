@@ -1,6 +1,6 @@
 import click
 
-from acta.cli.shared import TYPE_CHOICE, open_editor
+from acta.cli.shared import TYPE_CHOICE, open_editor, strip_type_prefix
 from acta.git.branch import (
     delete_branch,
     get_current_branch,
@@ -64,7 +64,10 @@ def pr(
     except ValueError as error:
         raise click.ClickException(str(error))
     breaking_marker = "!" if breaking else ""
-    pr_title = f"{type_override or type_}({scope_override or scope}){breaking_marker}: {title}"
+    pr_title = (
+        f"{type_override or type_}({scope_override or scope}){breaking_marker}: "
+        f"{strip_type_prefix(title)}"
+    )
     if edit_body:
         body = open_editor(f"{pr_title} ({branch_name})")
     active_issue_number = get_active_issue()
