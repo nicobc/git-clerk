@@ -18,7 +18,8 @@ import subprocess
 import time
 from pathlib import Path
 
-from acta.git.tag import fetch_tags, list_tags, next_release_tag
+from acta.git.commit import commit_subjects
+from acta.git.tag import fetch_tags, latest_semver_tag, list_tags, next_release_tag
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PYPROJECT = REPO_ROOT / "pyproject.toml"
@@ -78,6 +79,19 @@ def wait_for_publish_run(tag: str, commit_sha: str) -> str:
     )
 
 
+def _describe_bump(latest: str | None, new_tag: str) -> str:
+    """Describe the jump from ``latest`` to ``new_tag`` as major/minor/patch."""
+    if latest is None:
+        return "initial release"
+    old_major, old_minor, _ = (int(part) for part in latest[1:].split("."))
+    new_major, new_minor, _ = (int(part) for part in new_tag[1:].split("."))
+    if new_major > old_major:
+        return "major"
+    if new_minor > old_minor:
+        return "minor"
+    return "patch"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Derive the version, ship, tag, and publish.")
     parser.add_argument(
@@ -93,18 +107,24 @@ def main() -> None:
     dry_run: bool = args.dry_run
 
     fetch_tags()
+    existing_tags = list_tags()
     try:
-        new_tag = next_release_tag(list_tags(), stable)
+        new_tag = next_release_tag(existing_tags, stable)
     except ValueError as error:
         raise SystemExit(f"release: {error}")
     new_version = new_tag.removeprefix("v")
     title = f"bump version to {new_version}"
 
     if dry_run:
-        print(f"release: would tag {new_tag}")
-        print(f"  set pyproject.toml + uv.lock to {new_version}")
-        print(f'  acta branch/commit/pr/ship for "{title}"')
-        print(f"  acta release{' --stable' if stable else ''} -y, then watch the publish job")
+        latest = latest_semver_tag(existing_tags)
+        print("release: dry run — no changes made")
+        print(f"  current version: {latest or '(none)'}")
+        if latest is not None:
+            print(f"  commits since {latest}:")
+            for subject in commit_subjects(f"{latest}..origin/main"):
+                print(f"    {subject}")
+        print(f"  bump: {_describe_bump(latest, new_tag)} → {new_tag}")
+        print(f"  on a real run: ship the bump, push {new_tag}, and publish to PyPI")
         return
 
     write_pyproject_version(new_version)
