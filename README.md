@@ -454,6 +454,8 @@ Starts work on an issue: creates the branch from the milestone's scope, switches
 
 The branch is `type/scope/N-title-slug` — the issue's type and the milestone's scope, plus a third segment built from the issue number and a slug of its title. This keeps each issue on a distinct, self-describing branch even when several issues in a milestone share the same type and scope.
 
+`start` is idempotent: if the branch already exists, it switches to it (`Back on branch …`) instead of erroring, so re-running it to resume an in-progress issue is safe.
+
 ```sh
 acta issue start 1
 # On branch 'feat/auth/1-add-login', active issue is #1.
