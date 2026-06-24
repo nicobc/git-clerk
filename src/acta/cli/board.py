@@ -5,6 +5,7 @@ import click
 from acta.cli.issue import format_issue_lines
 from acta.cli.milestone import format_milestone_line
 from acta.git.branch import get_current_branch
+from acta.git.commit import get_commit_subjects, get_working_tree_changes
 from acta.git.config import get_active_issue
 from acta.github.issue import issue_list, issue_view
 from acta.github.milestone import milestone_list
@@ -23,6 +24,20 @@ def board() -> None:
         focus_milestone_number = (
             active_issue.milestone.number if active_issue.milestone is not None else None
         )
+
+    changes = get_working_tree_changes()
+    if changes:
+        click.echo()
+        click.echo("Working tree:")
+        for change_line in changes:
+            click.echo(change_line)
+
+    unpushed = get_commit_subjects("origin/main..HEAD")
+    if unpushed:
+        click.echo()
+        click.echo("Unpushed commits:")
+        for subject in unpushed:
+            click.echo(subject)
 
     milestones = milestone_list()
     if not milestones:

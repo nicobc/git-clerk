@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
@@ -98,3 +99,32 @@ def test_board_no_milestones(runner: CliRunner, fp: FakeProcess) -> None:
     result = runner.invoke(main, ["board"])
     assert result.exit_code == 0, result.output
     assert result.output == "Current branch: main\n\nNo open milestones.\n"
+
+
+def test_board_lists_working_tree_changes(
+    runner: CliRunner, fp: FakeProcess, git_repo_with_github_remote: Path
+) -> None:
+    (git_repo_with_github_remote / "new.txt").write_text("hi")
+    _register_foundation(fp)
+    result = runner.invoke(main, ["board"])
+    assert result.exit_code == 0, result.output
+    assert result.output == (
+        "Current branch: main\n\nWorking tree:\n?? new.txt\n\n" + EXPANDED_FOUNDATION
+    )
+
+
+@pytest.mark.usefixtures("git_repo_with_github_remote")
+def test_board_lists_unpushed_commits(runner: CliRunner, fp: FakeProcess) -> None:
+    subprocess.run(["git", "switch", "-c", "feat/foundation"], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "--allow-empty", "-m", "feat(foundation): add a"],
+        check=True,
+        capture_output=True,
+    )
+    _register_foundation(fp)
+    result = runner.invoke(main, ["board"])
+    assert result.exit_code == 0, result.output
+    assert result.output == (
+        "Current branch: feat/foundation\n\nUnpushed commits:\nfeat(foundation): add a\n\n"
+        + EXPANDED_FOUNDATION
+    )

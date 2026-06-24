@@ -24,3 +24,12 @@ def push_head() -> None:
 def get_commit_subjects(rev_range: str) -> list[str]:
     """Return the subject line of each commit in ``rev_range`` (e.g. ``v1.0.0..origin/main``)."""
     return git("log", rev_range, "--format=%s", capture=True).splitlines()
+
+
+def get_working_tree_changes() -> list[str]:
+    """Return ``git status --porcelain`` lines for the working tree, empty if clean.
+
+    Each line is a two-character status code and a path, e.g. ``" M src/app.py"``
+    (modified, unstaged) or ``"?? new.py"`` (untracked).
+    """
+    return git("status", "--porcelain", capture=True).splitlines()

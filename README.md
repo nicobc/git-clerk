@@ -337,12 +337,19 @@ acta watch
 
 ### `board`
 
-Prints a session snapshot: the current branch and active issue, the milestone in focus with its open issues expanded, and the remaining open milestones as one-line counts. The focused milestone is the active issue's milestone, or the first open milestone when no issue is active.
+Prints a session snapshot: the current branch and active issue, any uncommitted changes and unpushed commits, the milestone in focus with its open issues expanded, and the remaining open milestones as one-line counts. The focused milestone is the active issue's milestone, or the first open milestone when no issue is active. The working-tree and unpushed sections are omitted when there is nothing to show, so a clean branch stays terse.
 
 ```sh
 acta board
 # Current branch: feat/foundation
 # Active issue: #4 Auth
+#
+# Working tree:
+#  M src/acta/cli/board.py
+# ?? notes.md
+#
+# Unpushed commits:
+# feat(foundation): expand the board
 #
 # #1  Foundation — 3 issues open, 2 closed
 #   #3  chore  Full data model — schema and migrations
