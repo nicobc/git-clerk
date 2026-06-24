@@ -17,6 +17,12 @@ MILESTONE_API = f"repos/{FAKE_REPO}/milestones"
 ISSUE_FIELDS = "number,title,labels,milestone,body"
 PR_URL = f"https://github.com/{FAKE_REPO}/pull/1"
 
+# Output of a successful `acta pr`: the opened-PR line, the watch header, the one
+# (passing) check, and the all-clear.
+PR_SUCCESS_OUTPUT = (
+    f"Opened PR #1 at {PR_URL}\nNow watching checks...\n✓ test\nAll checks passed.\n"
+)
+
 ROLLUP_CMD = ["gh", "pr", "view", "1", "--repo", FAKE_REPO, "--json", "statusCheckRollup"]
 _JOB_URL = f"https://github.com/{FAKE_REPO}/actions/runs/9/job/7"
 ROLLUP_PASS = (
@@ -74,7 +80,7 @@ class TestPr:
         register_pr_create()
         result = runner.invoke(main, ["pr", "add tests"])
         assert result.exit_code == 0, result.output
-        assert PR_URL in result.output
+        assert result.output == PR_SUCCESS_OUTPUT
 
     def test_body_flag_passes_body(
         self, runner: CliRunner, register_pr_create: Callable[..., None]
@@ -82,7 +88,7 @@ class TestPr:
         register_pr_create(body="Adds coverage.")
         result = runner.invoke(main, ["pr", "-b", "Adds coverage.", "add tests"])
         assert result.exit_code == 0, result.output
-        assert PR_URL in result.output
+        assert result.output == PR_SUCCESS_OUTPUT
 
     def test_body_and_edit_are_mutually_exclusive(self, runner: CliRunner) -> None:
         result = runner.invoke(main, ["pr", "-b", "x", "-e", "add tests"])
@@ -95,7 +101,7 @@ class TestPr:
         register_pr_create(title="feat(my-scope)!: add tests")
         result = runner.invoke(main, ["pr", "--breaking", "add tests"])
         assert result.exit_code == 0, result.output
-        assert PR_URL in result.output
+        assert result.output == PR_SUCCESS_OUTPUT
 
 
 class TestShip:
@@ -273,7 +279,7 @@ class TestWatch:
         fp.register(ROLLUP_CMD, stdout=ROLLUP_PASS, occurrences=2)  # pyright: ignore[reportUnknownMemberType]
         result = runner.invoke(main, ["watch"])
         assert result.exit_code == 0, result.output
-        assert result.output == "✓ test\nAll checks passed.\n"
+        assert result.output == "Now watching checks...\n✓ test\nAll checks passed.\n"
 
     @pytest.mark.usefixtures("_instant_sleep")
     def test_polls_until_checks_appear_then_passes(
@@ -283,7 +289,7 @@ class TestWatch:
         fp.register(ROLLUP_CMD, stdout=ROLLUP_PASS, occurrences=2)  # pyright: ignore[reportUnknownMemberType]
         result = runner.invoke(main, ["watch"])
         assert result.exit_code == 0, result.output
-        assert result.output == "✓ test\nAll checks passed.\n"
+        assert result.output == "Now watching checks...\n✓ test\nAll checks passed.\n"
 
     @pytest.mark.usefixtures("_short_queue")
     def test_returns_without_watching_when_no_checks_appear(
@@ -304,6 +310,10 @@ class TestWatch:
         )
         result = runner.invoke(main, ["watch"])
         assert result.exit_code == 1
-        assert "✗ test" in result.output
-        assert "##[error]boom" in result.output
-        assert "PR #1 checks failed." in result.output
+        assert result.output == (
+            "Now watching checks...\n"
+            "✗ test\n"
+            "##[error]boom\n"
+            "Process completed with exit code 1\n"
+            "Error: PR #1 checks failed.\n"
+        )

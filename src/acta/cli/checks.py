@@ -6,6 +6,7 @@ echoes one line per check as it reaches a terminal state, prints the failing
 job's log on failure, and raises so the command exits non-zero.
 """
 
+import sys
 import time
 
 import click
@@ -21,6 +22,12 @@ from acta.github.pr import (
 _POLL_INTERVAL = 5  # seconds between check polls
 _QUEUE_TIMEOUT = 20  # seconds to wait for checks to register before giving up
 _FAILURE_LOG_LINES = 40  # tail length when surfacing a failed check's log
+
+
+def _echo_and_flush(message: str) -> None:
+    """Echo a line and flush, so progress streams live even when stdout is piped."""
+    click.echo(message)
+    sys.stdout.flush()
 
 
 def format_check(check: CheckRun) -> str:
@@ -47,6 +54,7 @@ def watch_checks(pr_number: int) -> None:
     """
     if not await_checks(pr_number):
         return
+    _echo_and_flush("Now watching checks...")
     reported: set[str] = set()
     while True:
         checks = fetch_checks(pr_number)
@@ -54,15 +62,15 @@ def watch_checks(pr_number: int) -> None:
             if check.state is ChecksState.PENDING or check.name in reported:
                 continue
             reported.add(check.name)
-            click.echo(format_check(check))
+            _echo_and_flush(format_check(check))
         failures = [check for check in checks if check.state is ChecksState.FAILED]
         if failures:
             for check in failures:
                 log = fetch_failed_log(check, _FAILURE_LOG_LINES)
                 if log:
-                    click.echo(log)
+                    _echo_and_flush(log)
             raise click.ClickException(f"PR #{pr_number} checks failed.")
         if checks and all(check.state is not ChecksState.PENDING for check in checks):
-            click.echo("All checks passed.")
+            _echo_and_flush("All checks passed.")
             return
         time.sleep(_POLL_INTERVAL)

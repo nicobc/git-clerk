@@ -79,7 +79,7 @@ def pr(
         body = f"{body}\n\n{closes_footer}" if body else closes_footer
     push_head()
     number, url = pr_create(pr_title, body or "")
-    click.echo(url)
+    click.echo(f"Opened PR #{number} at {url}")
     watch_checks(number)
 
 
