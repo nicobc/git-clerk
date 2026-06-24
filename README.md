@@ -181,8 +181,10 @@ Clears the active issue after merging. If the milestone has no remaining open is
 acta board                          # session snapshot: active work + current milestone
 acta milestone list                 # list open milestones with issue counts
 acta milestone reopen 1             # reopen a closed milestone
+acta milestone edit 1 --title Auth  # edit a milestone's title, scope, or description
 acta issue list                     # list open issues, grouped by milestone
 acta issue list --milestone 1       # filter to one milestone (flat list)
+acta issue edit 3 --type fix        # edit an issue's title, body, type, or milestone
 acta issue discard 3                # close an issue as not planned
 ```
 
@@ -388,6 +390,24 @@ Reopens a closed milestone.
 acta milestone reopen 1
 ```
 
+### `milestone edit NUMBER`
+
+Edits a milestone's title, scope, and/or description; at least one is required. Because the scope is stored inside the description, changing either re-encodes the description while preserving the half you leave untouched.
+
+```sh
+acta milestone edit 1 --title "Projects"
+acta milestone edit 1 --scope projects
+acta milestone edit 1 -d "Now covers SSO too."
+```
+
+**Options**
+
+| Flag | Description |
+|------|-------------|
+| `--title TITLE` | New milestone title |
+| `--scope SCOPE` | New branch scope for this milestone |
+| `-d DESC` / `--description` | New milestone description |
+
 ### `issue new TITLE`
 
 Creates a GitHub Issue. `--type` is required. `--milestone` is optional — an issue without one sits in the backlog. Both are required before `issue start` can be used. Type labels are created in the repository automatically on first use.
@@ -451,6 +471,27 @@ Closes an issue as "not planned".
 ```sh
 acta issue discard 3
 ```
+
+### `issue edit NUMBER`
+
+Edits an issue's title, body, type label, and/or milestone; at least one is required. Changing `--type` swaps the `type: …` label (provisioning the label set if needed); `--milestone` reassigns by number.
+
+```sh
+acta issue edit 3 --title "Add SSO login"
+acta issue edit 3 --type fix
+acta issue edit 3 --milestone 2
+acta issue edit 3 -e                    # opens $EDITOR for the new body
+```
+
+**Options**
+
+| Flag | Description |
+|------|-------------|
+| `--title TITLE` | New issue title |
+| `-b BODY` / `--body` | New issue body (mutually exclusive with `-e`) |
+| `-e` / `--edit` | Open `$EDITOR` for the new body |
+| `--type TYPE` | Change the `type: …` label |
+| `--milestone NUMBER` | Reassign to a milestone by number |
 
 ### `release`
 
