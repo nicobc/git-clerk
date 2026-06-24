@@ -17,6 +17,11 @@ Descriptions are not optional, they keep the repo self-documenting. The PR title
 and body are what land on `main` and feed the release notes. Commit bodies get
 squashed away on merge, so skip them by default.
 
+The branch type drives the release bump (`feat` → minor, `fix` → patch), so type
+by *consumer* impact: only changes under `src/acta/` — the shipped package — earn
+`feat` or `fix`. Changes to `scripts/`, `tests/`, `.github/` or *.md files must
+never be typed as `feat` or `fix`.
+
 ### Variations
 
 ```sh
