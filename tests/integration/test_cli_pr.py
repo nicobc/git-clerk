@@ -18,15 +18,17 @@ ISSUE_FIELDS = "number,title,labels,milestone,body"
 PR_URL = f"https://github.com/{FAKE_REPO}/pull/1"
 
 ROLLUP_CMD = ["gh", "pr", "view", "1", "--repo", FAKE_REPO, "--json", "statusCheckRollup"]
+_JOB_URL = f"https://github.com/{FAKE_REPO}/actions/runs/9/job/7"
 ROLLUP_PASS = (
-    '{"statusCheckRollup": [{"__typename": "CheckRun", "status": "COMPLETED",'
-    ' "conclusion": "SUCCESS"}]}'
+    '{"statusCheckRollup": [{"__typename": "CheckRun", "name": "test",'
+    ' "status": "COMPLETED", "conclusion": "SUCCESS", "detailsUrl": "' + _JOB_URL + '"}]}'
 )
 ROLLUP_FAIL = (
-    '{"statusCheckRollup": [{"__typename": "CheckRun", "status": "COMPLETED",'
-    ' "conclusion": "FAILURE"}]}'
+    '{"statusCheckRollup": [{"__typename": "CheckRun", "name": "test",'
+    ' "status": "COMPLETED", "conclusion": "FAILURE", "detailsUrl": "' + _JOB_URL + '"}]}'
 )
 ROLLUP_NONE = '{"statusCheckRollup": []}'
+JOB_LOG_CMD = ["gh", "run", "view", "--job", "7", "--log-failed", "--repo", FAKE_REPO]
 
 
 def _noop_sleep(_seconds: float) -> None:
@@ -62,11 +64,9 @@ class TestPr:
         (git_repo_with_github_remote / "file.txt").write_text("hello")
         add_all()
         git_commit("feat(my-scope): add something")
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "pr", "view", "1", "--repo", FAKE_REPO, "--json", "statusCheckRollup"],
-            stdout='{"statusCheckRollup": [{"state": "SUCCESS"}]}',
-        )
-        fp.register(["gh", "pr", "checks", "1", "--repo", FAKE_REPO, "--watch"])  # pyright: ignore[reportUnknownMemberType]
+        # acta pr watches after creating: _await_checks polls once, then the loop
+        # polls once more to read the terminal state.
+        fp.register(ROLLUP_CMD, stdout=ROLLUP_PASS, occurrences=2)  # pyright: ignore[reportUnknownMemberType]
 
     def test_pushes_branch_and_creates_pr(
         self, runner: CliRunner, register_pr_create: Callable[..., None]
@@ -260,33 +260,30 @@ class TestWatch:
 
     @pytest.fixture
     def _instant_sleep(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr("acta.github.pr.time.sleep", _noop_sleep)
+        monkeypatch.setattr("acta.cli.checks.time.sleep", _noop_sleep)
 
     @pytest.fixture
     def _short_queue(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr("acta.github.pr._CHECKS_QUEUE_TIMEOUT", 1)
-        monkeypatch.setattr("acta.github.pr._CHECKS_POLL_INTERVAL", 1)
-        monkeypatch.setattr("acta.github.pr.time.sleep", _noop_sleep)
+        monkeypatch.setattr("acta.cli.checks._QUEUE_TIMEOUT", 1)
+        monkeypatch.setattr("acta.cli.checks._POLL_INTERVAL", 1)
+        monkeypatch.setattr("acta.cli.checks.time.sleep", _noop_sleep)
 
-    def test_watches_once_checks_are_present(self, runner: CliRunner, fp: FakeProcess) -> None:
-        fp.register(ROLLUP_CMD, stdout=ROLLUP_PASS)  # pyright: ignore[reportUnknownMemberType]
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "pr", "checks", "1", "--repo", FAKE_REPO, "--watch"],
-        )
+    def test_reports_each_check_and_passes(self, runner: CliRunner, fp: FakeProcess) -> None:
+        # One poll to detect checks, one to read their terminal state.
+        fp.register(ROLLUP_CMD, stdout=ROLLUP_PASS, occurrences=2)  # pyright: ignore[reportUnknownMemberType]
         result = runner.invoke(main, ["watch"])
         assert result.exit_code == 0, result.output
+        assert result.output == "✓ test\nAll checks passed.\n"
 
     @pytest.mark.usefixtures("_instant_sleep")
-    def test_watches_once_checks_appear_after_polling(
+    def test_polls_until_checks_appear_then_passes(
         self, runner: CliRunner, fp: FakeProcess
     ) -> None:
         fp.register(ROLLUP_CMD, stdout=ROLLUP_NONE)  # pyright: ignore[reportUnknownMemberType]
-        fp.register(ROLLUP_CMD, stdout=ROLLUP_PASS)  # pyright: ignore[reportUnknownMemberType]
-        fp.register(  # pyright: ignore[reportUnknownMemberType]
-            ["gh", "pr", "checks", "1", "--repo", FAKE_REPO, "--watch"],
-        )
+        fp.register(ROLLUP_CMD, stdout=ROLLUP_PASS, occurrences=2)  # pyright: ignore[reportUnknownMemberType]
         result = runner.invoke(main, ["watch"])
         assert result.exit_code == 0, result.output
+        assert result.output == "✓ test\nAll checks passed.\n"
 
     @pytest.mark.usefixtures("_short_queue")
     def test_returns_without_watching_when_no_checks_appear(
@@ -295,3 +292,18 @@ class TestWatch:
         fp.register(ROLLUP_CMD, stdout=ROLLUP_NONE)  # pyright: ignore[reportUnknownMemberType]
         result = runner.invoke(main, ["watch"])
         assert result.exit_code == 0, result.output
+        assert result.output == ""
+
+    def test_surfaces_failure_log_and_exits_nonzero(
+        self, runner: CliRunner, fp: FakeProcess
+    ) -> None:
+        fp.register(ROLLUP_CMD, stdout=ROLLUP_FAIL, occurrences=2)  # pyright: ignore[reportUnknownMemberType]
+        fp.register(  # pyright: ignore[reportUnknownMemberType]
+            JOB_LOG_CMD,
+            stdout="##[error]boom\nProcess completed with exit code 1",
+        )
+        result = runner.invoke(main, ["watch"])
+        assert result.exit_code == 1
+        assert "✗ test" in result.output
+        assert "##[error]boom" in result.output
+        assert "PR #1 checks failed." in result.output

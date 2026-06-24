@@ -2,6 +2,7 @@
 
 import click
 
+from acta.cli.checks import watch_checks
 from acta.cli.shared import TYPE_CHOICE, open_editor, strip_type_prefix
 from acta.git.branch import (
     delete_branch,
@@ -17,7 +18,7 @@ from acta.git.commit import push_head
 from acta.git.config import clear_active_issue, get_active_issue
 from acta.github.issue import issue_view
 from acta.github.milestone import milestone_close, milestone_view
-from acta.github.pr import pr_checks_pass, pr_checks_watch, pr_create, pr_merge, pr_view
+from acta.github.pr import pr_checks_pass, pr_create, pr_merge, pr_view
 
 
 @click.command()
@@ -79,7 +80,7 @@ def pr(
     push_head()
     number, url = pr_create(pr_title, body or "")
     click.echo(url)
-    pr_checks_watch(number)
+    watch_checks(number)
 
 
 @click.command()
@@ -146,4 +147,4 @@ def ship(update_branch: str | None, confirmed: bool) -> None:
 def watch() -> None:
     """Watch CI checks for the current PR."""
     number, _ = pr_view()
-    pr_checks_watch(number)
+    watch_checks(number)
