@@ -95,13 +95,37 @@ def milestone_view(number: int) -> MilestoneDetail:
 
 
 def milestone_reopen(number: int) -> None:
-    """Reopen a closed milestone."""
-    gh("api", f"repos/{get_repo()}/milestones/{number}", "--method", "PATCH", "-f", "state=open")
+    """Reopen a closed milestone.
+
+    Captures the PATCH response so gh's raw milestone JSON is swallowed instead
+    of printed — the gh wrapper echoes stdout to the terminal when not captured.
+    """
+    gh(
+        "api",
+        f"repos/{get_repo()}/milestones/{number}",
+        "--method",
+        "PATCH",
+        "-f",
+        "state=open",
+        capture=True,
+    )
 
 
 def milestone_close(number: int) -> None:
-    """Close a milestone (done automatically when its last issue ships)."""
-    gh("api", f"repos/{get_repo()}/milestones/{number}", "--method", "PATCH", "-f", "state=closed")
+    """Close a milestone (done automatically when its last issue ships).
+
+    Captures the PATCH response so gh's raw milestone JSON is swallowed instead
+    of printed — the gh wrapper echoes stdout to the terminal when not captured.
+    """
+    gh(
+        "api",
+        f"repos/{get_repo()}/milestones/{number}",
+        "--method",
+        "PATCH",
+        "-f",
+        "state=closed",
+        capture=True,
+    )
 
 
 def _build_description(scope: str, description: str) -> str:
