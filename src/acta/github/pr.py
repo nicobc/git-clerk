@@ -1,18 +1,20 @@
-"""Open, inspect, watch, and merge pull requests, and reduce their CI check state."""
+"""Open, inspect, and merge pull requests, and reduce their CI check state."""
 
 import json
-import time
+import re
+import subprocess
+from dataclasses import dataclass
 from enum import Enum
 
 from acta.git.branch import get_current_branch
 from acta.github import get_repo, gh
 
-_CHECKS_POLL_INTERVAL = 5  # seconds
-_CHECKS_QUEUE_TIMEOUT = 90  # seconds to wait for checks to appear
-
 _PASSING_CONCLUSIONS = {"SUCCESS", "NEUTRAL", "SKIPPED"}
 _PASSING_STATUS_STATES = {"SUCCESS"}
 _PENDING_STATUS_STATES = {"PENDING", "EXPECTED"}
+
+# A check's "Details" URL ends with .../job/<id> for GitHub Actions check runs.
+_JOB_URL_RE = re.compile(r"/job/(\d+)")
 
 
 class ChecksState(Enum):
@@ -24,38 +26,57 @@ class ChecksState(Enum):
     FAILED = "failed"
 
 
-def classify_rollup(nodes: list[dict[str, object]]) -> ChecksState:
-    """Reduce a `statusCheckRollup` to one state.
+@dataclass(frozen=True)
+class CheckRun:
+    """One CI check on a PR: its display name, reduced state, and "Details" URL."""
 
-    Each node is a `CheckRun` (GitHub Actions) or a legacy `StatusContext`. A check is
-    pending until it reaches a terminal state, passing only on an explicitly successful
-    one. Fail-safe: any terminal check that is not recognised as passing counts as
-    FAILED, so an unexpected state never reads as green on a ship gate.
+    name: str
+    state: ChecksState
+    details_url: str
+
+
+def classify_node(node: dict[str, object]) -> ChecksState:
+    """Reduce a single `statusCheckRollup` node to PENDING, PASSED, or FAILED.
+
+    Handles both a `CheckRun` (GitHub Actions) and a legacy `StatusContext`. A
+    check is pending until it reaches a terminal state, passing only on an
+    explicitly successful one; any other terminal state counts as FAILED, so an
+    unexpected state never reads as green.
+    """
+    if node.get("__typename") == "StatusContext":
+        state = node.get("state")
+        if state in _PENDING_STATUS_STATES:
+            return ChecksState.PENDING
+        return ChecksState.PASSED if state in _PASSING_STATUS_STATES else ChecksState.FAILED
+    if node.get("status") != "COMPLETED":
+        return ChecksState.PENDING
+    if node.get("conclusion") in _PASSING_CONCLUSIONS:
+        return ChecksState.PASSED
+    return ChecksState.FAILED
+
+
+def classify_rollup(nodes: list[dict[str, object]]) -> ChecksState:
+    """Reduce a `statusCheckRollup` to one overall state.
+
+    Fail-safe aggregation: FAILED if any check failed, else PENDING if any is
+    still running, else PASSED. An empty list (no checks) is NONE.
     """
     if not nodes:
         return ChecksState.NONE
-    any_pending = False
-    for node in nodes:
-        if node.get("__typename") == "StatusContext":
-            state = node.get("state")
-            if state in _PENDING_STATUS_STATES:
-                any_pending = True
-            elif state not in _PASSING_STATUS_STATES:
-                return ChecksState.FAILED
-        elif node.get("status") != "COMPLETED":
-            any_pending = True
-        elif node.get("conclusion") not in _PASSING_CONCLUSIONS:
-            return ChecksState.FAILED
-    return ChecksState.PENDING if any_pending else ChecksState.PASSED
+    states = [classify_node(node) for node in nodes]
+    if ChecksState.FAILED in states:
+        return ChecksState.FAILED
+    if ChecksState.PENDING in states:
+        return ChecksState.PENDING
+    return ChecksState.PASSED
 
 
-def fetch_checks_state(pr_number: int) -> ChecksState:
-    """Ask GitHub for the PR's CI results and reduce them to one overall state.
+def fetch_rollup(pr_number: int) -> list[dict[str, object]]:
+    """Fetch the PR's raw ``statusCheckRollup`` nodes for its latest commit.
 
-    GitHub reports every CI check on the PR's latest commit — each GitHub Actions
+    GitHub reports every CI check on the PR's head commit — each GitHub Actions
     job plus any older-style status checks — as a list it calls the
-    "statusCheckRollup". This fetches that list and collapses it (via
-    ``classify_rollup``) into a single NONE/PENDING/PASSED/FAILED verdict.
+    "statusCheckRollup".
     """
     response_json = gh(
         "pr",
@@ -68,7 +89,53 @@ def fetch_checks_state(pr_number: int) -> ChecksState:
         capture=True,
     )
     parsed: dict[str, list[dict[str, object]]] = json.loads(response_json)
-    return classify_rollup(parsed.get("statusCheckRollup") or [])
+    return parsed.get("statusCheckRollup") or []
+
+
+def fetch_checks_state(pr_number: int) -> ChecksState:
+    """Ask GitHub for the PR's CI results and reduce them to one overall state."""
+    return classify_rollup(fetch_rollup(pr_number))
+
+
+def fetch_checks(pr_number: int) -> list[CheckRun]:
+    """Return each of the PR's CI checks with its name, reduced state, and Details URL.
+
+    A CheckRun (GitHub Actions) carries ``name``/``detailsUrl``; a legacy
+    StatusContext carries ``context``/``targetUrl`` instead — fall back across both.
+    """
+    checks: list[CheckRun] = []
+    for node in fetch_rollup(pr_number):
+        name = str(node.get("name") or node.get("context") or "check")
+        details_url = str(node.get("detailsUrl") or node.get("targetUrl") or "")
+        checks.append(CheckRun(name, classify_node(node), details_url))
+    return checks
+
+
+def fetch_failed_log(check: CheckRun, line_count: int) -> str:
+    """Return the tail of a failed check's failed-step log, or '' if unavailable.
+
+    Resolves the Actions job id from the check's Details URL and asks gh for just
+    the failed steps (``gh run view --log-failed``), keeping the last
+    ``line_count`` lines. Best-effort: returns '' when there is no job id (e.g. a
+    legacy status context) or gh cannot produce a log.
+    """
+    match = _JOB_URL_RE.search(check.details_url)
+    if match is None:
+        return ""
+    try:
+        log = gh(
+            "run",
+            "view",
+            "--job",
+            match.group(1),
+            "--log-failed",
+            "--repo",
+            get_repo(),
+            capture=True,
+        )
+    except subprocess.CalledProcessError:
+        return ""
+    return "\n".join(log.splitlines()[-line_count:])
 
 
 def pr_create(title: str, body: str, base: str = "main") -> tuple[int, str]:
@@ -114,19 +181,3 @@ def pr_checks_pass(pr_number: int) -> bool:
 def pr_merge(pr_number: int) -> None:
     """Squash-merge the PR and delete its remote branch."""
     gh("pr", "merge", str(pr_number), "--squash", "--delete-branch", "--repo", get_repo())
-
-
-def pr_checks_watch(pr_number: int) -> None:
-    """Wait for checks to appear, then stream them live until they finish.
-
-    Polls for up to ``_CHECKS_QUEUE_TIMEOUT`` seconds for CI to register; if none
-    ever appears it returns quietly (nothing to watch), otherwise it hands off to
-    ``gh pr checks --watch`` which blocks until the checks complete.
-    """
-    for _ in range(_CHECKS_QUEUE_TIMEOUT // _CHECKS_POLL_INTERVAL):
-        if fetch_checks_state(pr_number) is not ChecksState.NONE:
-            break
-        time.sleep(_CHECKS_POLL_INTERVAL)
-    else:
-        return  # no checks ever appeared — nothing to watch
-    gh("pr", "checks", str(pr_number), "--repo", get_repo(), "--watch")
