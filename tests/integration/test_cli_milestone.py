@@ -99,3 +99,51 @@ def test_reopens_milestone(runner: CliRunner, fp: FakeProcess) -> None:
     result = runner.invoke(main, ["milestone", "reopen", "1"])
     assert result.exit_code == 0, result.output
     assert result.output == "Milestone #1 reopened.\n"
+
+
+@pytest.mark.usefixtures("git_repo_with_github_remote")
+def test_edits_milestone_title(runner: CliRunner, fp: FakeProcess) -> None:
+    fp.register(  # pyright: ignore[reportUnknownMemberType]
+        ["gh", "api", f"{MILESTONE_API}/1", "--method", "PATCH", "-f", "title=Projects"],
+    )
+    result = runner.invoke(main, ["milestone", "edit", "1", "--title", "Projects"])
+    assert result.exit_code == 0, result.output
+    assert result.output == "Milestone #1 updated.\n"
+
+
+@pytest.mark.usefixtures("git_repo_with_github_remote")
+def test_edits_milestone_scope_preserves_description(runner: CliRunner, fp: FakeProcess) -> None:
+    # Changing scope re-encodes the description, keeping its free-text half.
+    fp.register(  # pyright: ignore[reportUnknownMemberType]
+        ["gh", "api", f"{MILESTONE_API}/1"],
+        stdout=(
+            '{"number": 1, "title": "Auth", "description": "scope: auth\\n\\nBuild it.",'
+            ' "open_issues": 0, "state": "open"}'
+        ),
+    )
+    fp.register(  # pyright: ignore[reportUnknownMemberType]
+        [
+            "gh",
+            "api",
+            f"{MILESTONE_API}/1",
+            "--method",
+            "PATCH",
+            "-f",
+            "description=scope: login\n\nBuild it.",
+        ],
+    )
+    result = runner.invoke(main, ["milestone", "edit", "1", "--scope", "login"])
+    assert result.exit_code == 0, result.output
+    assert result.output == "Milestone #1 updated.\n"
+
+
+@pytest.mark.usefixtures("git_repo_with_github_remote")
+def test_milestone_edit_requires_a_field(runner: CliRunner) -> None:
+    result = runner.invoke(main, ["milestone", "edit", "1"])
+    assert result.exit_code == 2
+    assert result.output == (
+        "Usage: main milestone edit [OPTIONS] NUMBER\n"
+        "Try 'main milestone edit --help' for help.\n"
+        "\n"
+        "Error: provide at least one of --title, --scope, --description\n"
+    )

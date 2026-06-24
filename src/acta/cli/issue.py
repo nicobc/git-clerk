@@ -11,6 +11,7 @@ from acta.github.issue import (
     IssueInfo,
     issue_close_not_planned,
     issue_create,
+    issue_edit,
     issue_list,
     issue_view,
 )
@@ -49,7 +50,7 @@ def format_issue_lines(
 
 @click.group(cls=CLIGroup)
 def issue() -> None:
-    """Create, list, start, and discard issues on the GitHub board."""
+    """Create, list, start, discard, and edit issues on the GitHub board."""
 
 
 @issue.command(name="new")
@@ -168,3 +169,40 @@ def discard_issue(number: int) -> None:
     """Close an issue as discarded (not planned)."""
     issue_close_not_planned(number)
     click.echo(f"Issue #{number} discarded.")
+
+
+@issue.command(name="edit")
+@click.argument("number", type=int)
+@click.option("--title", default=None, help="New issue title.")
+@click.option(
+    "-b", "--body", "body", default=None, help="New issue body. Mutually exclusive with -e."
+)
+@click.option("-e", "--edit", "edit_body", is_flag=True, help="Open $EDITOR for the new body.")
+@click.option("--type", "type_", default=None, type=TYPE_CHOICE, help="Change the type label.")
+@click.option(
+    "--milestone",
+    "milestone_number",
+    default=None,
+    type=int,
+    metavar="NUMBER",
+    help="Reassign to milestone number.",
+)
+def edit_issue(
+    number: int,
+    title: str | None,
+    body: str | None,
+    edit_body: bool,
+    type_: str | None,
+    milestone_number: int | None,
+) -> None:
+    """Edit an issue's title, body, type label, and/or milestone."""
+    if body and edit_body:
+        raise click.UsageError("--body and --edit are mutually exclusive")
+    if edit_body:
+        body = open_editor(f"Edit issue #{number}")
+    if title is None and body is None and type_ is None and milestone_number is None:
+        raise click.UsageError(
+            "provide at least one of --title, --body/--edit, --type, --milestone"
+        )
+    issue_edit(number, title=title, body=body, milestone=milestone_number, type_label=type_)
+    click.echo(f"Issue #{number} updated.")

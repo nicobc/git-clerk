@@ -319,3 +319,70 @@ def test_discards_issue(runner: CliRunner, fp: FakeProcess) -> None:
     result = runner.invoke(main, ["issue", "discard", "1"])
     assert result.exit_code == 0, result.output
     assert result.output == "Issue #1 discarded.\n"
+
+
+@pytest.mark.usefixtures("git_repo_with_github_remote")
+def test_edits_issue_title(runner: CliRunner, fp: FakeProcess) -> None:
+    fp.register(  # pyright: ignore[reportUnknownMemberType]
+        ["gh", "issue", "edit", "1", "--repo", FAKE_REPO, "--title", "New title"],
+    )
+    result = runner.invoke(main, ["issue", "edit", "1", "--title", "New title"])
+    assert result.exit_code == 0, result.output
+    assert result.output == "Issue #1 updated.\n"
+
+
+@pytest.mark.usefixtures("git_repo_with_github_remote")
+def test_edits_issue_milestone_by_title(runner: CliRunner, fp: FakeProcess) -> None:
+    fp.register(  # pyright: ignore[reportUnknownMemberType]
+        ["gh", "api", f"{MILESTONE_API}/2"],
+        stdout=(
+            '{"number": 2, "title": "Projects", "description": "scope: projects",'
+            ' "open_issues": 0, "state": "open"}'
+        ),
+    )
+    fp.register(  # pyright: ignore[reportUnknownMemberType]
+        ["gh", "issue", "edit", "1", "--repo", FAKE_REPO, "--milestone", "Projects"],
+    )
+    result = runner.invoke(main, ["issue", "edit", "1", "--milestone", "2"])
+    assert result.exit_code == 0, result.output
+    assert result.output == "Issue #1 updated.\n"
+
+
+@pytest.mark.usefixtures("git_repo_with_github_remote")
+def test_edits_issue_type_swaps_label(runner: CliRunner, fp: FakeProcess) -> None:
+    fp.register(  # pyright: ignore[reportUnknownMemberType]
+        ["gh", "issue", "view", "1", "--repo", FAKE_REPO, "--json", ISSUE_VIEW_FIELDS],
+        stdout=(
+            '{"number": 1, "title": "Add login", "labels": [{"name": "type: feat"}],'
+            ' "milestone": null, "body": ""}'
+        ),
+    )
+    fp.register(  # pyright: ignore[reportUnknownMemberType]
+        [
+            "gh",
+            "issue",
+            "edit",
+            "1",
+            "--repo",
+            FAKE_REPO,
+            "--remove-label",
+            "type: feat",
+            "--add-label",
+            "type: fix",
+        ],
+    )
+    result = runner.invoke(main, ["issue", "edit", "1", "--type", "fix"])
+    assert result.exit_code == 0, result.output
+    assert result.output == "Issue #1 updated.\n"
+
+
+@pytest.mark.usefixtures("git_repo_with_github_remote")
+def test_issue_edit_requires_a_field(runner: CliRunner) -> None:
+    result = runner.invoke(main, ["issue", "edit", "1"])
+    assert result.exit_code == 2
+    assert result.output == (
+        "Usage: main issue edit [OPTIONS] NUMBER\n"
+        "Try 'main issue edit --help' for help.\n"
+        "\n"
+        "Error: provide at least one of --title, --body/--edit, --type, --milestone\n"
+    )

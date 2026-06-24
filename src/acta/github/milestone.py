@@ -128,6 +128,36 @@ def milestone_close(number: int) -> None:
     )
 
 
+def milestone_edit(
+    number: int,
+    title: str | None = None,
+    scope: str | None = None,
+    description: str | None = None,
+) -> None:
+    """Edit a milestone's title and/or scope/description; unset fields stay as they are.
+
+    Scope is encoded into the description, so changing either re-encodes the
+    description, preserving the unspecified half from the milestone's current
+    values. Captures the PATCH response so gh's raw JSON isn't printed.
+    """
+    fields: list[str] = []
+    if title is not None:
+        fields += ["-f", f"title={title}"]
+    if scope is not None or description is not None:
+        current = milestone_view(number)
+        new_scope = scope if scope is not None else current.scope
+        new_description = description if description is not None else current.description
+        fields += ["-f", f"description={_build_description(new_scope, new_description)}"]
+    gh(
+        "api",
+        f"repos/{get_repo()}/milestones/{number}",
+        "--method",
+        "PATCH",
+        *fields,
+        capture=True,
+    )
+
+
 def _build_description(scope: str, description: str) -> str:
     """Encode ``scope`` as a leading ``scope: …`` line above the free-text description."""
     description_parts = [f"scope: {scope}"]

@@ -7,6 +7,7 @@ from acta.github import get_repo
 from acta.github.milestone import (
     MilestoneListItem,
     milestone_create,
+    milestone_edit,
     milestone_list,
     milestone_reopen,
 )
@@ -31,7 +32,7 @@ def format_milestone_line(milestone_list_item: MilestoneListItem) -> str:
 
 @click.group(cls=CLIGroup)
 def milestone() -> None:
-    """Create, list, and reopen milestones on the GitHub board."""
+    """Create, list, reopen, and edit milestones on the GitHub board."""
 
 
 @milestone.command(name="new")
@@ -76,3 +77,21 @@ def reopen_milestone(number: int) -> None:
     """Reopen a closed milestone."""
     milestone_reopen(number)
     click.echo(f"Milestone #{number} reopened.")
+
+
+@milestone.command(name="edit")
+@click.argument("number", type=int)
+@click.option("--title", default=None, help="New milestone title.")
+@click.option("--scope", default=None, help="New branch scope for this milestone.")
+@click.option("-d", "--description", "description", default=None, help="New milestone description.")
+def edit_milestone(
+    number: int,
+    title: str | None,
+    scope: str | None,
+    description: str | None,
+) -> None:
+    """Edit a milestone's title, scope, and/or description."""
+    if title is None and scope is None and description is None:
+        raise click.UsageError("provide at least one of --title, --scope, --description")
+    milestone_edit(number, title=title, scope=scope, description=description)
+    click.echo(f"Milestone #{number} updated.")

@@ -146,6 +146,44 @@ def issue_close_not_planned(number: int) -> None:
     gh("issue", "close", str(number), "--reason", "not planned", "--repo", get_repo())
 
 
+def issue_edit(
+    number: int,
+    title: str | None = None,
+    body: str | None = None,
+    milestone: int | None = None,
+    type_label: str | None = None,
+) -> None:
+    """Edit an issue's title, body, milestone, and/or type label; unset fields stay.
+
+    The milestone is passed to gh by title, as ``gh issue edit`` expects the
+    name. Changing the type swaps the ``type: …`` label; if the new label does
+    not exist yet, the edit is retried once after provisioning the label set
+    (mirroring ``issue_create``). Captures gh's issue-URL output.
+    """
+    command_args = ["issue", "edit", str(number), "--repo", get_repo()]
+    if title is not None:
+        command_args += ["--title", title]
+    if body is not None:
+        command_args += ["--body", body]
+    if milestone is not None:
+        command_args += ["--milestone", milestone_view(milestone).title]
+    if type_label is None:
+        gh(*command_args, capture=True)
+        return
+    current_type = issue_view(number).type
+    command_args += [
+        "--remove-label",
+        f"type: {current_type}",
+        "--add-label",
+        f"type: {type_label}",
+    ]
+    try:
+        gh(*command_args, capture=True)
+    except subprocess.CalledProcessError:
+        ensure_type_labels()
+        gh(*command_args, capture=True)
+
+
 def _extract_type(labels: list[dict[str, str]]) -> str | None:
     """Return the type from the first ``type: …`` label, or None if absent."""
     for label in labels:
