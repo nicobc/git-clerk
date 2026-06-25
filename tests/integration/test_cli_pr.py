@@ -223,6 +223,11 @@ class TestShipWithMilestone:
         )
         result = runner.invoke(main, ["ship", "-y"])
         assert result.exit_code == 0, result.output
+        assert result.output == (
+            "Merged PR #1 feat/auth → main\n"
+            "Closed issue #1.\n"
+            "Switched to main, pulled origin/main, deleted feat/auth, and pruned stale refs.\n"
+        )
         assert get_branch_issue("feat/auth") is None
 
     def test_closes_milestone_when_all_issues_done(
@@ -249,6 +254,7 @@ class TestShipWithMilestone:
         assert result.exit_code == 0, result.output
         assert result.output == (
             "Merged PR #1 feat/auth → main\n"
+            "Closed issue #1.\n"
             "Switched to main, pulled origin/main, deleted feat/auth, and pruned stale refs.\n"
             'Milestone #1 "Auth System" completed and closed.\n'
         )
@@ -274,6 +280,7 @@ class TestShipWithMilestone:
         assert result.exit_code == 0, result.output
         assert result.output == (
             "Merged PR #1 feat/auth → main\n"
+            "Closed issue #1.\n"
             "Switched to main, pulled origin/main, deleted feat/auth, and pruned stale refs.\n"
         )
 

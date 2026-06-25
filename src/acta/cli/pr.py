@@ -113,15 +113,20 @@ def ship(update_branch: str | None, confirmed: bool) -> None:
         raise click.ClickException(
             f"PR #{pr_number} has failing or pending checks — run 'acta watch' to monitor"
         )
-    # The milestones to re-check come from the issues this PR closes, per GitHub's
-    # own linkage, so an unlinked PR touches no issue or milestone.
+    # The issues (and their milestones) to act on come from the ones this PR
+    # closes, per GitHub's own linkage, so an unlinked PR touches nothing.
+    closing_issue_numbers = sorted(pr_closing_issues(pr_number))
     milestone_numbers: set[int] = set()
-    for issue_number in pr_closing_issues(pr_number):
+    for issue_number in closing_issue_numbers:
         closing_issue = issue_view(issue_number)
         if closing_issue.milestone is not None:
             milestone_numbers.add(closing_issue.milestone.number)
     pr_merge(pr_number)
     click.echo(f"Merged PR #{pr_number} {branch_name} → main")
+    if closing_issue_numbers:
+        refs = ", ".join(f"#{number}" for number in closing_issue_numbers)
+        noun = "issue" if len(closing_issue_numbers) == 1 else "issues"
+        click.echo(f"Closed {noun} {refs}.")
     switch_main()
     pull_origin_main()
     delete_branch(branch_name)
