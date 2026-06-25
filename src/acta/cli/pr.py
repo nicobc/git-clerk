@@ -15,10 +15,10 @@ from acta.git.branch import (
 )
 from acta.git.branch import parse as parse_branch
 from acta.git.commit import push_head
-from acta.git.config import clear_active_issue, get_active_issue
+from acta.git.state import clear_branch, get_branch_issue, set_branch_pr
 from acta.github.issue import issue_view
 from acta.github.milestone import milestone_close, milestone_view
-from acta.github.pr import pr_checks_pass, pr_create, pr_merge, pr_view
+from acta.github.pr import pr_checks_pass, pr_closing_issues, pr_create, pr_merge, pr_view
 
 
 @click.command()
@@ -73,12 +73,13 @@ def pr(
     )
     if edit_body:
         body = open_editor(f"{pr_title} ({branch_name})")
-    active_issue_number = get_active_issue()
-    if active_issue_number is not None:
-        closes_footer = f"Closes #{active_issue_number}"
+    issue_number = get_branch_issue(branch_name)
+    if issue_number is not None:
+        closes_footer = f"Closes #{issue_number}"
         body = f"{body}\n\n{closes_footer}" if body else closes_footer
     push_head()
     number, url = pr_create(pr_title, body or "")
+    set_branch_pr(branch_name, number)
     click.echo(f"Opened PR #{number} at {url}")
     watch_checks(number)
 
@@ -112,13 +113,13 @@ def ship(update_branch: str | None, confirmed: bool) -> None:
         raise click.ClickException(
             f"PR #{pr_number} has failing or pending checks — run 'acta watch' to monitor"
         )
-    active_issue_number = get_active_issue()
-    milestone_number: int | None = None
-    if active_issue_number is not None:
-        active_issue = issue_view(active_issue_number)
-        milestone_ref = active_issue.milestone
-        if milestone_ref is not None:
-            milestone_number = milestone_ref.number
+    # The milestones to re-check come from the issues this PR closes, per GitHub's
+    # own linkage, so an unlinked PR touches no issue or milestone.
+    milestone_numbers: set[int] = set()
+    for issue_number in pr_closing_issues(pr_number):
+        closing_issue = issue_view(issue_number)
+        if closing_issue.milestone is not None:
+            milestone_numbers.add(closing_issue.milestone.number)
     pr_merge(pr_number)
     click.echo(f"Merged PR #{pr_number} {branch_name} → main")
     switch_main()
@@ -128,13 +129,12 @@ def ship(update_branch: str | None, confirmed: bool) -> None:
     click.echo(
         f"Switched to main, pulled origin/main, deleted {branch_name}, and pruned stale refs."
     )
+    clear_branch(branch_name)
     if update_branch:
         switch_branch(update_branch)
         merge_origin_main()
         click.echo(f"Switched to {update_branch}, merged origin/main.")
-    if active_issue_number is not None:
-        clear_active_issue()
-    if milestone_number is not None:
+    for milestone_number in sorted(milestone_numbers):
         milestone_detail = milestone_view(milestone_number)
         if milestone_detail.open_issues == 0:
             milestone_close(milestone_number)

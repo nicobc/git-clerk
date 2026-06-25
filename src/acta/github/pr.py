@@ -173,6 +173,23 @@ def pr_view() -> tuple[int, str]:
     return int(pr_data["number"]), str(pr_data["title"])
 
 
+def pr_closing_issues(pr_number: int) -> list[int]:
+    """Return the issue numbers the PR closes on merge, from its ``Closes #N`` links."""
+    response_json = gh(
+        "pr",
+        "view",
+        str(pr_number),
+        "--repo",
+        get_repo(),
+        "--json",
+        "closingIssuesReferences",
+        capture=True,
+    )
+    data: dict[str, list[dict[str, int]]] = json.loads(response_json)
+    references = data.get("closingIssuesReferences") or []
+    return [int(reference["number"]) for reference in references]
+
+
 def pr_checks_pass(pr_number: int) -> bool:
     """Return True if the PR's checks are green or there are none (nothing gating)."""
     return fetch_checks_state(pr_number) in {ChecksState.PASSED, ChecksState.NONE}

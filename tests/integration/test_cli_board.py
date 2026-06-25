@@ -6,7 +6,7 @@ from click.testing import CliRunner
 from pytest_subprocess import FakeProcess
 
 from acta.cli import main
-from acta.git.config import set_active_issue
+from acta.git.state import set_branch_issue
 
 FAKE_REPO = "test-owner/test-repo"
 MILESTONE_API = f"repos/{FAKE_REPO}/milestones"
@@ -64,7 +64,7 @@ def _register_foundation(fp: FakeProcess) -> None:
 @pytest.mark.usefixtures("git_repo_with_github_remote")
 def test_board_with_active_issue_focuses_its_milestone(runner: CliRunner, fp: FakeProcess) -> None:
     subprocess.run(["git", "switch", "-c", "feat/foundation"], check=True, capture_output=True)
-    set_active_issue(4)
+    set_branch_issue("feat/foundation", 4)
     fp.register(  # pyright: ignore[reportUnknownMemberType]
         ["gh", "issue", "view", "4", "--repo", FAKE_REPO, "--json", ISSUE_VIEW_FIELDS],
         stdout=(

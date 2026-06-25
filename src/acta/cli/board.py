@@ -6,7 +6,7 @@ from acta.cli.issue import format_issue_lines
 from acta.cli.milestone import format_milestone_line
 from acta.git.branch import get_current_branch
 from acta.git.commit import get_commit_subjects, get_working_tree_changes
-from acta.git.config import get_active_issue
+from acta.git.state import get_branch_issue
 from acta.github.issue import issue_list, issue_view
 from acta.github.milestone import milestone_list
 
@@ -16,7 +16,7 @@ def board() -> None:
     """Session snapshot: active work, current milestone, and backlog."""
     branch_name = get_current_branch()
     click.echo(f"Current branch: {branch_name}")
-    active_issue_number = get_active_issue()
+    active_issue_number = get_branch_issue(branch_name)
     focus_milestone_number: int | None = None
     if active_issue_number is not None:
         active_issue = issue_view(active_issue_number)

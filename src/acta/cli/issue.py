@@ -6,7 +6,7 @@ import click
 
 from acta.cli.shared import TYPE_CHOICE, CLIGroup, open_editor
 from acta.git.branch import branch_exists, fetch_origin, switch_branch, switch_new_branch
-from acta.git.config import set_active_issue
+from acta.git.state import set_branch_issue
 from acta.github.issue import (
     IssueInfo,
     issue_close_not_planned,
@@ -163,7 +163,7 @@ def start_issue(number: int) -> None:
         switch_branch(branch_name)
     else:
         switch_new_branch(branch_name)
-    set_active_issue(number)
+    set_branch_issue(branch_name, number)
     status_words = "Back on" if resumed else "On"
     click.echo(f"{status_words} branch {branch_name}, active issue is #{number}.")
     issue_body = issue_info.body.strip()

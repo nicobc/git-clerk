@@ -6,7 +6,7 @@ from pytest_subprocess import FakeProcess
 
 from acta.cli import main
 from acta.git.branch import TYPES, get_current_branch, switch_main, switch_new_branch
-from acta.git.config import get_active_issue
+from acta.git.state import get_branch_issue
 from acta.github.label import TYPE_COLORS
 
 FAKE_REPO = "test-owner/test-repo"
@@ -241,7 +241,7 @@ class TestIssueStart:
             "## Description\nLogin form with magic link.\n"
         )
         assert get_current_branch() == "feat/auth/1-add-login"
-        assert get_active_issue() == 1
+        assert get_branch_issue("feat/auth/1-add-login") == 1
 
     @pytest.mark.usefixtures("git_repo_with_github_remote")
     def test_resumes_existing_branch(self, runner: CliRunner) -> None:
@@ -255,7 +255,7 @@ class TestIssueStart:
             "## Description\nLogin form with magic link.\n"
         )
         assert get_current_branch() == "feat/auth/1-add-login"
-        assert get_active_issue() == 1
+        assert get_branch_issue("feat/auth/1-add-login") == 1
 
     @pytest.mark.usefixtures("git_repo_with_github_remote")
     def test_omits_body_block_when_empty(self, runner: CliRunner, fp: FakeProcess) -> None:
