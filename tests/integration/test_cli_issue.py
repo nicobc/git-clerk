@@ -336,6 +336,16 @@ def test_discards_issue(runner: CliRunner, fp: FakeProcess) -> None:
 
 
 @pytest.mark.usefixtures("git_repo_with_github_remote")
+def test_reopens_issue(runner: CliRunner, fp: FakeProcess) -> None:
+    fp.register(  # pyright: ignore[reportUnknownMemberType]
+        ["gh", "issue", "reopen", "1", "--repo", FAKE_REPO],
+    )
+    result = runner.invoke(main, ["issue", "reopen", "1"])
+    assert result.exit_code == 0, result.output
+    assert result.output == "Issue #1 reopened.\n"
+
+
+@pytest.mark.usefixtures("git_repo_with_github_remote")
 def test_edits_issue_title(runner: CliRunner, fp: FakeProcess) -> None:
     fp.register(  # pyright: ignore[reportUnknownMemberType]
         ["gh", "issue", "edit", "1", "--repo", FAKE_REPO, "--title", "New title"],

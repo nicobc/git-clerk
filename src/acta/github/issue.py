@@ -146,6 +146,11 @@ def issue_close_not_planned(number: int) -> None:
     gh("issue", "close", str(number), "--reason", "not planned", "--repo", get_repo())
 
 
+def issue_reopen(number: int) -> None:
+    """Reopen a previously closed issue."""
+    gh("issue", "reopen", str(number), "--repo", get_repo())
+
+
 def issue_edit(
     number: int,
     title: str | None = None,

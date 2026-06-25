@@ -1,4 +1,4 @@
-"""``acta issue`` — create, list, start, and discard GitHub issues."""
+"""``acta issue`` — create, list, start, discard, and reopen GitHub issues."""
 
 import re
 
@@ -13,6 +13,7 @@ from acta.github.issue import (
     issue_create,
     issue_edit,
     issue_list,
+    issue_reopen,
     issue_view,
 )
 from acta.github.milestone import milestone_view
@@ -50,7 +51,7 @@ def format_issue_lines(
 
 @click.group(cls=CLIGroup)
 def issue() -> None:
-    """Create, list, start, discard, and edit issues on the GitHub board."""
+    """Create, list, start, discard, reopen, and edit issues on the GitHub board."""
 
 
 @issue.command(name="new")
@@ -178,6 +179,14 @@ def discard_issue(number: int) -> None:
     """Close an issue as discarded (not planned)."""
     issue_close_not_planned(number)
     click.echo(f"Issue #{number} discarded.")
+
+
+@issue.command(name="reopen")
+@click.argument("number", type=int)
+def reopen_issue(number: int) -> None:
+    """Reopen a closed issue (e.g. one closed in error)."""
+    issue_reopen(number)
+    click.echo(f"Issue #{number} reopened.")
 
 
 @issue.command(name="edit")
